@@ -1,0 +1,28 @@
+{
+  "name": "firestore-framer-sync-plugin",
+  "version": "1.0.0",
+  "description": "A Framer plugin to sync Firestore collections with Framer CMS collections dynamically",
+  "main": "index.js",
+  "scripts": {
+    "dev": "framer-plugin dev",
+    "build": "framer-plugin build",
+    "publish": "framer-plugin publish"
+  },
+  "keywords": [
+    "framer",
+    "plugin",
+    "firestore",
+    "firebase",
+    "cms",
+    "sync",
+    "database"
+  ],
+  "author": "Firebase Cloud Functions",
+  "license": "MIT",
+  "devDependencies": {
+    "framer-plugin": "^0.2.0"
+  },
+  "dependencies": {
+    "framer-plugin": "^0.2.0"
+  }
+}
