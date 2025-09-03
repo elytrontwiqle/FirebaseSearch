@@ -7,6 +7,7 @@
  * Features demonstrated:
  * - Basic search with configurable return fields
  * - Fuzzy search with typo tolerance (1 typo per 4 characters)
+ * - Result sorting by field with direction control
  * - Rate limiting with headers and error handling
  * - Data transformation (timestamps → ISO strings, references → paths)
  * - Case sensitivity options
@@ -126,7 +127,104 @@ async function fuzzySearchDemo() {
   }
 }
 
-// Example 4: Search with specific return fields
+// Example 4: Sorting search results
+async function sortedSearchDemo() {
+  try {
+    console.log('=== Sorted Search Demo ===');
+    
+    // Example 1: Sort by name in ascending order (default)
+    console.log('\n1. Sort by name (ascending):');
+    const ascendingResponse = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchValue: 'user',
+        sortBy: 'name',
+        direction: 'asc', // or 'ascending'
+        limit: 5
+      })
+    });
+    
+    const ascendingResult = await ascendingResponse.json();
+    if (ascendingResult.success) {
+      console.log('Results sorted by name (A-Z):');
+      ascendingResult.data.forEach((item, index) => {
+        console.log(`  ${index + 1}. ${item.name || 'N/A'} (ID: ${item.id})`);
+      });
+      console.log(`Sort info: ${ascendingResult.meta.sortBy} ${ascendingResult.meta.direction}`);
+    }
+    
+    // Example 2: Sort by date in descending order (newest first)
+    console.log('\n2. Sort by date (descending - newest first):');
+    const descendingResponse = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchValue: 'user',
+        sortBy: 'createdAt', // or 'date', 'timestamp', etc.
+        direction: 'desc', // or 'descending'
+        limit: 5
+      })
+    });
+    
+    const descendingResult = await descendingResponse.json();
+    if (descendingResult.success) {
+      console.log('Results sorted by date (newest first):');
+      descendingResult.data.forEach((item, index) => {
+        const date = item.createdAt || item.date || 'N/A';
+        console.log(`  ${index + 1}. ${item.name || item.id} - ${date}`);
+      });
+    }
+    
+    // Example 3: Sort by nested field
+    console.log('\n3. Sort by nested field (user.profile.score):');
+    const nestedSortResponse = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchValue: 'user',
+        sortBy: 'user.profile.score', // Nested field with dot notation
+        direction: 'desc', // Highest scores first
+        limit: 5
+      })
+    });
+    
+    const nestedSortResult = await nestedSortResponse.json();
+    if (nestedSortResult.success) {
+      console.log('Results sorted by nested score (highest first):');
+      nestedSortResult.data.forEach((item, index) => {
+        const score = item.user?.profile?.score || 'N/A';
+        console.log(`  ${index + 1}. ${item.name || item.id} - Score: ${score}`);
+      });
+    }
+    
+    // Example 4: Search without sorting (original order)
+    console.log('\n4. Search without sorting (original order):');
+    const unsortedResponse = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchValue: 'user',
+        // No sortBy parameter - results returned in original order
+        limit: 5
+      })
+    });
+    
+    const unsortedResult = await unsortedResponse.json();
+    if (unsortedResult.success) {
+      console.log('Results in original order (no sorting):');
+      unsortedResult.data.forEach((item, index) => {
+        console.log(`  ${index + 1}. ${item.name || item.id}`);
+      });
+      console.log(`Sort info: ${unsortedResult.meta.sortBy} ${unsortedResult.meta.direction}`);
+    }
+    
+  } catch (error) {
+    console.error('Sorted search demo failed:', error.message);
+  }
+}
+
+// Example 5: Search with specific return fields
 async function searchWithReturnFields() {
   try {
     const response = await fetch(SEARCH_URL, {
@@ -510,6 +608,7 @@ if (typeof module !== 'undefined' && module.exports) {
     basicSearch,
     searchWithDefaultFields,
     fuzzySearchDemo,
+    sortedSearchDemo,
     searchWithReturnFields,
     caseSensitiveSearch,
     nestedFieldSearch,

@@ -106,7 +106,7 @@ Estimated costs for moderate usage (1000 searches/month, 10 results each):
 
 - 📚 **Documentation** - Comprehensive guides and examples
 - 🐛 **Issues** - [Report bugs or request features](https://github.com/elytrontwiqle/FirebaseSearch/issues)
-- 💬 **Discussions** - [Community support](https://github.com/elytrontwiqle/FirebaseSearch/discussions)
+- 💬 **Discussions** - [Community support](https://github.com/elytrontwiqle/FirebaseSearch/discussions)o with
 - 💝 **Donations** - [Support development](https://pay.yoco.com/twiqle)
 
 ## 📄 License

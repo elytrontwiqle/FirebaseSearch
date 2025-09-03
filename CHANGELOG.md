@@ -5,6 +5,23 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-01-28
+
+### Added
+- **Result Sorting**: Sort search results by any field with ascending/descending options
+  - `sortBy` parameter: Field name to sort by (supports nested fields with dot notation)
+  - `direction` parameter: Sort direction (`asc`, `desc`, `ascending`, `descending`)
+  - Intelligent handling of null/undefined values (placed at end)
+  - Mixed data type support with consistent string comparison
+  - Case-insensitive string sorting by default
+  - Proper numeric and date value sorting
+- Enhanced response metadata with sorting information (`sortBy` and `direction` fields)
+
+### Improved
+- API documentation updated with sorting examples
+- Usage examples enhanced with sorting demonstrations
+- Response format documentation includes sorting metadata
+
 ## [1.0.1] - 2025-01-28
 
 ### Added

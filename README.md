@@ -7,6 +7,7 @@ A powerful HTTP-based search extension for Firebase Firestore that provides dedi
 - **HTTP REST API**: Simple HTTP endpoints for easy integration with any application
 - **Pre-configured Search**: Collection and searchable fields configured during installation
 - **Fuzzy Search**: Intelligent typo tolerance (1 typo per 4 characters) for better UX
+- **Result Sorting**: Sort results by any field with ascending/descending options
 - **Data Transformation**: Automatic conversion of Firestore timestamps and references to clean JSON
 - **Field Filtering**: Return only specific fields to optimize response size
 - **Nested Field Support**: Search and return nested fields using dot notation (e.g., `user.profile.name`)
@@ -89,6 +90,8 @@ This makes it easy to identify and manage multiple search endpoints in your appl
 | `returnFields` | string | all fields | Comma-separated list of fields to return |
 | `limit` | number | 50 | Maximum number of results |
 | `caseSensitive` | boolean | false | Whether search should be case-sensitive |
+| `sortBy` | string | none | Field name to sort results by (supports nested fields with dot notation) |
+| `direction` | string | asc | Sort direction: `asc`, `desc`, `ascending`, or `descending` |
 
 ## 🔧 Usage Examples
 
@@ -101,14 +104,16 @@ curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firesto
     "searchValue": "john",
     "returnFields": "name,email,createdAt",
     "limit": 10,
-    "caseSensitive": false
+    "caseSensitive": false,
+    "sortBy": "name",
+    "direction": "asc"
   }'
 ```
 
 ### GET Request (Query Parameters)
 
 ```bash
-curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchProductsHttp?searchValue=laptop&returnFields=title,price,description&limit=20"
+curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchProductsHttp?searchValue=laptop&returnFields=title,price,description&limit=20&sortBy=price&direction=desc"
 ```
 
 ### JavaScript/TypeScript Example
@@ -212,7 +217,9 @@ const useFirestoreSearch = (searchTerm, options = {}) => {
     "searchCollection": "users",
     "searchValue": "john",
     "searchFields": ["name", "email", "profile.bio"],
-    "returnFields": ["name", "email", "profile"]
+    "returnFields": ["name", "email", "profile"],
+    "sortBy": "name",
+    "direction": "asc"
   }
 }
 ```
@@ -274,6 +281,60 @@ The extension is configured to search a single, specific collection during insta
   "limit": 10
 }
 ```
+
+## 📊 Result Sorting
+
+The extension supports flexible result sorting to help you organize search results according to your needs.
+
+### Sorting Parameters
+
+- **`sortBy`**: Field name to sort by (supports nested fields with dot notation like `user.profile.score`)
+- **`direction`**: Sort direction - `asc`/`ascending` (default) or `desc`/`descending`
+
+### Sorting Examples
+
+#### Sort by Name (Ascending)
+```javascript
+{
+  "searchValue": "user",
+  "sortBy": "name",
+  "direction": "asc"  // A-Z order
+}
+```
+
+#### Sort by Date (Newest First)
+```javascript
+{
+  "searchValue": "post",
+  "sortBy": "createdAt",
+  "direction": "desc"  // Newest first
+}
+```
+
+#### Sort by Nested Field
+```javascript
+{
+  "searchValue": "product",
+  "sortBy": "pricing.amount",  // Nested field with dot notation
+  "direction": "desc"          // Highest price first
+}
+```
+
+#### No Sorting (Original Order)
+```javascript
+{
+  "searchValue": "item"
+  // No sortBy parameter - results in original order
+}
+```
+
+### Sorting Behavior
+
+- **Null/Undefined Values**: Always placed at the end regardless of sort direction
+- **Mixed Data Types**: Converted to strings for consistent comparison
+- **String Comparison**: Case-insensitive by default
+- **Numeric/Date Values**: Sorted by actual value, not string representation
+- **Performance**: Sorting is applied after search filtering for optimal performance
 
 ## 🔍 Fuzzy Search
 

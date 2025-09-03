@@ -38,7 +38,9 @@ curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/e
   -d '{
     "returnFields": "title,price,imageUrl",
     "searchValue": "laptop",
-    "limit": 20
+    "limit": 20,
+    "sortBy": "price",
+    "direction": "desc"
   }'
 ```
 
@@ -104,6 +106,8 @@ Your extension was configured with:
 | `returnFields` | string | No | Comma-separated fields to return (uses configured default if not specified) |
 | `limit` | number | No | Max results (default: ${param:DEFAULT_SEARCH_LIMIT}) |
 | `caseSensitive` | boolean | No | Case sensitivity (default: ${param:ENABLE_CASE_SENSITIVE_SEARCH}) |
+| `sortBy` | string | No | Field name to sort results by (supports nested fields with dot notation) |
+| `direction` | string | No | Sort direction: `asc`, `desc`, `ascending`, or `descending` (default: `asc`) |
 
 **Note**: The collection to search and searchable fields are configured during extension installation and cannot be changed via API requests.
 

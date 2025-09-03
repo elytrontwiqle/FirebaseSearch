@@ -225,6 +225,8 @@ function fuzzyMatch(searchTerm, fieldValue, caseSensitive = false) {
  * - searchValue: The value to search for
  * - limit: Maximum number of results to return (optional, default: 50)
  * - caseSensitive: Whether search should be case sensitive (optional, default: false)
+ * - sortBy: Field name to sort results by (optional, supports nested fields with dot notation)
+ * - direction: Sort direction - 'asc', 'desc', 'ascending', or 'descending' (optional, default: 'asc')
  * 
  * Note: The collection and searchable fields are configured during extension installation
  */
@@ -293,7 +295,9 @@ exports[functionName] = onRequest({
       returnFields,
       searchValue,
       limit = config.defaultSearchLimit,
-      caseSensitive = config.enableCaseSensitiveSearch
+      caseSensitive = config.enableCaseSensitiveSearch,
+      sortBy,
+      direction = 'asc'
     } = params;
 
     // Use configured collection and searchable fields
@@ -302,7 +306,9 @@ exports[functionName] = onRequest({
 
     // Input validation
     const validationError = validateSearchParameters({
-      searchValue
+      searchValue,
+      sortBy,
+      direction
     });
     
     if (validationError) {
@@ -334,7 +340,9 @@ exports[functionName] = onRequest({
       returnFields: returnFieldsList,
       searchValue,
       limit: searchLimit,
-      caseSensitive
+      caseSensitive,
+      sortBy,
+      direction
     });
 
 
@@ -347,7 +355,9 @@ exports[functionName] = onRequest({
         searchCollection,
         searchValue,
         searchFields,
-        returnFields: returnFieldsList
+        returnFields: returnFieldsList,
+        sortBy: sortBy || null,
+        direction: direction || null
       }
     });
 
@@ -366,7 +376,7 @@ exports[functionName] = onRequest({
 /**
  * Validate search parameters
  */
-function validateSearchParameters({searchValue}) {
+function validateSearchParameters({searchValue, sortBy, direction}) {
   // Validate extension configuration
   if (!config.searchCollection || typeof config.searchCollection !== 'string') {
     return 'Extension configuration error: SEARCH_COLLECTION is required';
@@ -388,6 +398,29 @@ function validateSearchParameters({searchValue}) {
   // Validate collection name format
   if (!/^[a-zA-Z0-9_-]+$/.test(config.searchCollection)) {
     return 'Extension configuration error: SEARCH_COLLECTION must contain only alphanumeric characters, hyphens, and underscores';
+  }
+
+  // Validate sorting parameters
+  if (sortBy !== undefined && sortBy !== null && sortBy !== '') {
+    if (typeof sortBy !== 'string') {
+      return 'sortBy must be a string';
+    }
+    
+    // Validate field name format
+    if (!/^[a-zA-Z0-9_.]+$/.test(sortBy)) {
+      return 'sortBy field name must contain only alphanumeric characters, dots, and underscores';
+    }
+  }
+
+  if (direction !== undefined && direction !== null && direction !== '') {
+    if (typeof direction !== 'string') {
+      return 'direction must be a string';
+    }
+    
+    const validDirections = ['asc', 'desc', 'ascending', 'descending'];
+    if (!validDirections.includes(direction.toLowerCase())) {
+      return 'direction must be one of: asc, desc, ascending, descending';
+    }
   }
 
   return null;
@@ -420,7 +453,9 @@ async function performSearch({
   returnFields,
   searchValue,
   limit,
-  caseSensitive
+  caseSensitive,
+  sortBy,
+  direction
 }) {
   const collectionRef = db.collection(collection);
   const results = [];
@@ -477,6 +512,48 @@ async function performSearch({
         matchCount++;
       }
     });
+
+    // Sort results if sortBy is specified
+    if (sortBy && sortBy.trim() !== '') {
+      const sortDirection = direction && ['desc', 'descending'].includes(direction.toLowerCase()) ? -1 : 1;
+      
+      results.sort((a, b) => {
+        const valueA = getNestedFieldValue(a, sortBy);
+        const valueB = getNestedFieldValue(b, sortBy);
+        
+        // Handle null/undefined values - put them at the end
+        if (valueA === null || valueA === undefined) {
+          if (valueB === null || valueB === undefined) return 0;
+          return 1; // Put nulls at the end regardless of sort direction
+        }
+        if (valueB === null || valueB === undefined) {
+          return -1; // Put nulls at the end regardless of sort direction
+        }
+        
+        // Convert to strings for comparison if they're not numbers or dates
+        let compareA = valueA;
+        let compareB = valueB;
+        
+        // Handle different data types
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          // String comparison (case-insensitive)
+          compareA = valueA.toLowerCase();
+          compareB = valueB.toLowerCase();
+        } else if (typeof valueA === 'number' && typeof valueB === 'number') {
+          // Numeric comparison - use as is
+        } else if (valueA instanceof Date && valueB instanceof Date) {
+          // Date comparison - use as is
+        } else {
+          // Mixed types - convert to strings
+          compareA = String(valueA).toLowerCase();
+          compareB = String(valueB).toLowerCase();
+        }
+        
+        if (compareA < compareB) return -1 * sortDirection;
+        if (compareA > compareB) return 1 * sortDirection;
+        return 0;
+      });
+    }
 
     return results;
 
