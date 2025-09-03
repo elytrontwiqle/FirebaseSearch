@@ -503,20 +503,22 @@ async function performSearch({
           resultDoc = { id: doc.id, ...data };
         }
         
-        // Transform Firestore-specific data types to clean JSON
-        const transformedDoc = transformFirestoreData(resultDoc);
-        results.push(transformedDoc);
+        // Store the raw document for sorting before transformation
+        results.push({
+          rawDoc: resultDoc,
+          originalData: data
+        });
         matchCount++;
       }
     });
 
-    // Sort results if sortBy is specified
+    // Sort results if sortBy is specified (before transformation)
     if (sortBy && sortBy.trim() !== '') {
       const sortDirection = direction && ['desc', 'descending'].includes(direction.toLowerCase()) ? -1 : 1;
       
       results.sort((a, b) => {
-        const valueA = getNestedFieldValue(a, sortBy);
-        const valueB = getNestedFieldValue(b, sortBy);
+        const valueA = getNestedFieldValue(a.originalData, sortBy);
+        const valueB = getNestedFieldValue(b.originalData, sortBy);
         
         // Handle null/undefined values - put them at the end
         if (valueA === null || valueA === undefined) {
@@ -552,7 +554,10 @@ async function performSearch({
       });
     }
 
-    return results;
+    // Transform the sorted results to clean JSON
+    const transformedResults = results.map(item => transformFirestoreData(item.rawDoc));
+
+    return transformedResults;
 
   } catch (error) {
     throw new Error(`Failed to search collection: ${error.message}`);

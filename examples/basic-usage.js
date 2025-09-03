@@ -25,18 +25,18 @@ const SEARCH_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-f
 async function basicSearch() {
   try {
     const response = await fetch(SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
         searchValue: 'john',
         returnFields: 'name,email,profileImage', // Override default return fields
         limit: 10
-      })
-    });
+    })
+  });
 
-    const result = await response.json();
+  const result = await response.json();
     
     // Check rate limiting headers
     console.log('Rate Limit Info:');
@@ -62,18 +62,18 @@ async function basicSearch() {
 async function searchWithDefaultFields() {
   try {
     const response = await fetch(SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
         searchValue: 'firebase',
         // No returnFields specified - uses default fields configured during installation
         limit: 5
-      })
-    });
+    })
+  });
 
-    const result = await response.json();
+  const result = await response.json();
     
     if (result.success) {
       console.log('Search with default fields:', result.data);
@@ -101,17 +101,17 @@ async function fuzzySearchDemo() {
     
     for (const searchTerm of typoSearches) {
       const response = await fetch(SEARCH_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
           searchValue: searchTerm,
           limit: 3
-        })
-      });
+    })
+  });
 
-      const result = await response.json();
+  const result = await response.json();
       
       if (result.success) {
         console.log(`\nSearch: "${searchTerm}" found ${result.meta.totalResults} results`);
@@ -228,18 +228,18 @@ async function sortedSearchDemo() {
 async function searchWithReturnFields() {
   try {
     const response = await fetch(SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
         searchValue: 'laptop',
         returnFields: 'title,price,imageUrl,brand',
         limit: 20
-      })
-    });
+    })
+  });
 
-    const result = await response.json();
+  const result = await response.json();
     
     if (result.success) {
       console.log('Product search results:');
@@ -270,8 +270,8 @@ async function caseSensitiveSearch() {
       })
     });
 
-    const result = await response.json();
-    
+  const result = await response.json();
+  
     if (result.success) {
       console.log('Case-sensitive search results:', result.data.length);
       result.data.forEach(article => {
@@ -287,11 +287,11 @@ async function caseSensitiveSearch() {
 async function nestedFieldSearch() {
   try {
     const response = await fetch(SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
         searchValue: 'premium',
         returnFields: 'orderId,customer.name,totalAmount,status,shipping.address.city',
         limit: 25
@@ -373,10 +373,10 @@ async function userDirectorySearch() {
         searchValue: 'marketing',
         returnFields: 'displayName,email,profilePhoto,department,jobTitle',
         limit: 20
-      })
-    });
+    })
+  });
 
-    const result = await response.json();
+  const result = await response.json();
     
     if (result.success) {
       console.log('Employee directory search:');
@@ -393,18 +393,18 @@ async function userDirectorySearch() {
 async function contentSearch() {
   try {
     const response = await fetch(SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
         searchValue: 'firebase tutorial',
         returnFields: 'title,excerpt,author.name,publishedAt,featuredImage,category',
         limit: 15
-      })
-    });
+    })
+  });
 
-    const result = await response.json();
+  const result = await response.json();
     
     if (result.success) {
       console.log('Content search results:');
@@ -604,7 +604,7 @@ async function testRateLimit() {
 
 // Export functions for use in other files or testing
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
+module.exports = {
     basicSearch,
     searchWithDefaultFields,
     fuzzySearchDemo,
