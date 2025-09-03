@@ -5,6 +5,22 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2025-01-28
+
+### Fixed
+- **Force Deploy**: Ensure all sorting and rate limiting fixes are properly deployed
+- **Guaranteed Implementation**: Version bump to force deployment of all recent changes
+  - Sorting logic with proper string trimming and case handling
+  - Correct meta data in response (sortBy and direction)
+  - Improved rate limit error messages
+  - Enhanced debug headers
+
+### Technical Details
+- This version ensures all previous fixes are properly deployed and active
+- Sorting should now work correctly for ascending/descending order
+- Meta data should accurately reflect sorting parameters
+- Rate limiting should show improved error messages
+
 ## [1.0.6] - 2025-01-28
 
 ### Improved
