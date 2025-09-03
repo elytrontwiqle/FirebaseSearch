@@ -5,6 +5,24 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2025-01-28
+
+### Improved
+- **Rate Limit Error Message**: Simplified and user-friendly error message
+  - Changed from technical message to "Rate limit reached. Please wait before making more requests."
+  - Added structured `details` object with limit and retry information
+  - Removed confusing external service references
+- **Rate Limit Debugging**: Enhanced rate limit headers for better debugging
+  - Added `X-RateLimit-Window` header showing time window
+  - Added `X-RateLimit-Current` header showing current request count
+  - Better visibility into rate limiting behavior
+
+### Technical Details
+- Rate limit error now returns structured response with clear message
+- Additional debug headers help identify rate limiting issues
+- Maintains existing rate limiting logic and thresholds
+- Improved error response format for better client handling
+
 ## [1.0.5] - 2025-01-28
 
 ### Fixed

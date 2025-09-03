@@ -95,9 +95,13 @@ function checkRateLimit(clientIP) {
     cleanupRateLimitStore();
   }
 
+  const remaining = config.rateLimitRequestsPerMinute - rateLimitData.requests.length;
+  
   return {
     allowed: true,
-    remaining: config.rateLimitRequestsPerMinute - rateLimitData.requests.length
+    remaining: remaining,
+    currentCount: rateLimitData.requests.length,
+    windowMs: windowMs
   };
 }
 
@@ -255,9 +259,15 @@ exports.searchCollectionHttp = onRequest({
     // Add rate limit headers
     response.set('X-RateLimit-Limit', config.rateLimitRequestsPerMinute.toString());
     response.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
+    response.set('X-RateLimit-Window', `${config.rateLimitWindowMinutes}min`);
     
     if (rateLimitResult.resetTime) {
       response.set('X-RateLimit-Reset', Math.ceil(rateLimitResult.resetTime / 1000).toString());
+    }
+    
+    // Add debug information in headers
+    if (rateLimitResult.currentCount !== undefined) {
+      response.set('X-RateLimit-Current', rateLimitResult.currentCount.toString());
     }
 
     if (!rateLimitResult.allowed) {
@@ -265,9 +275,12 @@ exports.searchCollectionHttp = onRequest({
         success: false,
         error: {
           code: 'RATE_LIMIT_EXCEEDED',
-          message: `Too many requests. Limit: ${config.rateLimitRequestsPerMinute} requests per ${config.rateLimitWindowMinutes} minute(s). Try again later.`,
-          timestamp: new Date().toISOString(),
-          retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+          message: 'Rate limit reached. Please wait before making more requests.',
+          details: {
+            limit: `${config.rateLimitRequestsPerMinute} requests per ${config.rateLimitWindowMinutes} minute(s)`,
+            retryAfter: `${Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)} seconds`
+          },
+          timestamp: new Date().toISOString()
         }
       });
       return;

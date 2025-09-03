@@ -2,7 +2,7 @@
 # This extension provides configurable search functionality for Firestore collections
 
 name: firestore-search-extension
-version: 1.0.5
+version: 1.0.6
 specVersion: v1beta
 
 displayName: Firestore Search Extension
