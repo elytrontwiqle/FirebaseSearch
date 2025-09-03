@@ -1,277 +1,454 @@
-# 🔥 Firebase Firestore ↔ Framer CMS Dynamic Sync
+# 🔍 Firebase Firestore Search Extension
 
-A powerful Firebase Cloud Function solution that dynamically syncs Firestore collections with Framer CMS collections, automatically detecting field types and handling bi-directional synchronization.
+A powerful HTTP-based search extension for Firebase Firestore that provides dedicated search functionality for a single configured collection with pre-defined searchable fields, advanced filtering, and comprehensive error handling.
 
 ## ✨ Features
 
-- **Dynamic Field Detection**: Automatically analyzes Firestore documents and maps field types to appropriate Framer CMS field types
-- **Bi-directional Sync**: Sync data from Firestore to Framer CMS and vice versa
-- **Real-time Auto-sync**: Automatically syncs when Firestore documents are created, updated, or deleted
-- **Custom Field Mapping**: Override automatic field detection with custom mappings
-- **Comprehensive Logging**: Track all sync operations with detailed logs
-- **Framer Plugin**: Easy-to-use UI for configuration and manual sync operations
-- **Type Safety**: Handles all Firestore data types including timestamps, arrays, and nested objects
+- **HTTP REST API**: Simple HTTP endpoints for easy integration with any application
+- **Pre-configured Search**: Collection and searchable fields configured during installation
+- **Fuzzy Search**: Intelligent typo tolerance (1 typo per 4 characters) for better UX
+- **Data Transformation**: Automatic conversion of Firestore timestamps and references to clean JSON
+- **Field Filtering**: Return only specific fields to optimize response size
+- **Nested Field Support**: Search and return nested fields using dot notation (e.g., `user.profile.name`)
+- **Case Sensitivity Control**: Configure case-sensitive or case-insensitive searches
+- **Result Limiting**: Configurable limits to prevent performance issues
+- **Comprehensive Validation**: Input validation with detailed error messages
+- **CORS Support**: Built-in CORS support for web applications
+- **Rate Limiting**: Configurable per-origin request limiting to prevent abuse
+- **Enhanced Security**: Collection and searchable fields locked during installation
 
 ## 🚀 Quick Start
 
-### 1. Deploy Firebase Cloud Functions
+### Installation via Firebase Extensions
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd firestore-framer-sync
-
-# Install dependencies
-npm install
-
-# Initialize Firebase (if not already done)
-firebase init
-
-# Deploy the functions
-firebase deploy --only functions
+Use the direct installation link:
+```
+https://console.firebase.google.com/project/_/extensions/install?ref=elytron/firestore-search-extension@1.0.0-beta.9
 ```
 
-### 2. Install the Framer Plugin
-
+Or install via Firebase CLI:
 ```bash
-cd framer-plugin
-npm install
-
-# For development
-npm run dev
-
-# For production build
-npm run build
+firebase ext:install elytron/firestore-search-extension@1.0.0-beta.9 --project=your-project-id
 ```
 
-### 3. Configure the Sync
+### Configuration Parameters
 
-1. In Framer, create a new Managed Collection
-2. Install and configure the Firestore CMS Sync plugin
-3. Enter your Firebase Cloud Function URL
-4. Specify the Firestore collection name
-5. Optionally configure custom field mappings
-6. Test the connection and sync!
+During installation, configure these parameters:
+- **Location**: Cloud Functions deployment region
+- **Search Collection**: The single Firestore collection to search (required)
+- **Searchable Fields**: Comma-separated list of fields to search in (required)
+- **Default Return Fields**: Default fields to return in results (optional, returns all if empty)
+- **Default Search Limit**: Default maximum results (default: 50)
+- **Maximum Search Limit**: Absolute maximum results (default: 1000)
+- **Case Sensitivity**: Default case sensitivity setting
+- **Fuzzy Search**: Enable typo tolerance (1 typo per 4 characters, default: enabled)
+- **Rate Limiting**: Configure requests per minute per origin (default: 60)
+- **Rate Limit Window**: Time window for rate limiting in minutes (default: 1)
 
-## 📋 Supported Field Types
+## 📋 API Reference
 
-The system automatically detects and converts between Firestore and Framer field types:
+### HTTP Endpoint
 
-| Firestore Type | Framer CMS Type | Notes |
-|----------------|-----------------|-------|
-| `string` | `string` | Basic text content |
-| `number` | `number` | Numeric values |
-| `boolean` | `boolean` | True/false values |
-| `timestamp` | `date` | Firebase timestamps |
-| `array` | `array` | Arrays (supports image galleries) |
-| `object` | `string` | Serialized as JSON string |
-| Email fields | `string` | Auto-detected by field name |
-| URL fields | `link` | Auto-detected by field name |
-| Image fields | `image` | Auto-detected by field name |
-| HTML content | `formattedText` | Auto-detected by content |
+After installation, your search endpoint will be available at:
+```
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-search[COLLECTION_NAME]Http
+```
 
-## 🔧 API Endpoints
+**Example**: If you configure the extension to search a collection named `users`, your endpoint will be:
+```
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchUsersHttp
+```
 
-### Manual Sync: Firestore → Framer
+### Multiple Extension Instances
+
+When you install this extension multiple times for different collections, each gets a unique, descriptive endpoint:
+
+- **Users collection**: `...search**Users**Http`
+- **Products collection**: `...search**Products**Http` 
+- **Orders collection**: `...search**Orders**Http`
+
+This makes it easy to identify and manage multiple search endpoints in your application.
+
+### Supported Methods
+
+- **GET**: Pass parameters as query string
+- **POST**: Pass parameters in JSON body
+
+### Required Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `searchValue` | string | The value to search for |
+
+**Note**: The collection and searchable fields are configured during extension installation.
+
+### Optional Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `returnFields` | string | all fields | Comma-separated list of fields to return |
+| `limit` | number | 50 | Maximum number of results |
+| `caseSensitive` | boolean | false | Whether search should be case-sensitive |
+
+## 🔧 Usage Examples
+
+### POST Request (JSON Body)
 
 ```bash
-POST /syncToFramer
-Content-Type: application/json
+curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchUsersHttp" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searchValue": "john",
+    "returnFields": "name,email,createdAt",
+    "limit": 10,
+    "caseSensitive": false
+  }'
+```
 
-{
-  "collectionName": "posts",
-  "framerWebhookUrl": "https://your-webhook-url.com", // optional
-  "framerApiKey": "your-api-key", // optional
-  "mappingConfig": {
-    "title": { "type": "string", "framerType": "string" },
-    "publishDate": { "type": "timestamp", "framerType": "date" }
+### GET Request (Query Parameters)
+
+```bash
+curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchProductsHttp?searchValue=laptop&returnFields=title,price,description&limit=20"
+```
+
+### JavaScript/TypeScript Example
+
+```javascript
+const searchFirestore = async (value, options = {}) => {
+  const response = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      searchValue: value,
+      ...options
+    })
+  });
+  
+  return await response.json();
+};
+
+// Usage (assuming extension is configured for 'articles' collection with 'title,content,tags' as searchable fields)
+const results = await searchFirestore(
+  'firebase',
+  { 
+    returnFields: 'title,publishedAt,author.name',
+    limit: 15,
+    caseSensitive: false 
   }
-}
+);
 ```
 
-### Bi-directional Sync: Framer → Firestore
+### React Hook Example
 
-```bash
-POST /syncFromFramer
-Content-Type: application/json
+```javascript
+import { useState, useEffect } from 'react';
 
+const useFirestoreSearch = (searchTerm, options = {}) => {
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!searchTerm) return;
+
+    const search = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Replace with your actual endpoint (includes your collection name)
+        const response = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-search[COLLECTION_NAME]Http', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            searchValue: searchTerm,
+            limit: 20,
+            ...options
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setResults(data.data);
+        } else {
+          setError(data.error.message);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    search();
+  }, [searchTerm, options]);
+
+  return { results, loading, error };
+};
+```
+
+## 📊 Response Format
+
+### Success Response
+
+```json
 {
-  "collectionName": "posts",
-  "framerData": [
+  "success": true,
+  "data": [
     {
-      "id": "post-1",
-      "slug": "my-first-post",
-      "fieldData": {
-        "title": { "type": "string", "value": "My First Post" },
-        "publishDate": { "type": "date", "value": "2024-01-15T10:00:00Z" }
+      "id": "doc1",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "profile": {
+        "bio": "Software developer"
       }
     }
   ],
-  "mappingConfig": {
-    "title": { "type": "string", "framerType": "string" },
-    "publishDate": { "type": "timestamp", "framerType": "date" }
+  "meta": {
+    "totalResults": 1,
+    "searchCollection": "users",
+    "searchValue": "john",
+    "searchFields": ["name", "email", "profile.bio"],
+    "returnFields": ["name", "email", "profile"]
   }
 }
 ```
 
-### Configuration Management
+### Error Response
 
-```bash
-# Set sync configuration
-POST /setSyncConfig
+```json
 {
-  "collectionName": "posts",
-  "config": {
-    "enabled": true,
-    "framerWebhookUrl": "https://your-webhook.com",
-    "mappingConfig": { ... },
-    "autoSync": true
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "searchValue is required and must be a string",
+    "timestamp": "2024-01-15T10:30:00.000Z"
   }
 }
-
-# Get sync configuration
-GET /getSyncConfig?collectionName=posts
-
-# Get sync logs
-GET /getSyncLogs?collectionName=posts&limit=50
 ```
 
-## 🔄 Auto-Sync Setup
+## 🔍 Advanced Features
 
-The system can automatically sync whenever Firestore documents change:
+### Nested Field Search
 
-1. **Configure Auto-sync**: Use the `/setSyncConfig` endpoint or Framer plugin to enable auto-sync
-2. **Firestore Triggers**: The `autoSyncOnChange` function automatically triggers on document changes
-3. **Selective Sync**: Only collections with `enabled: true` in their config will auto-sync
+Search and return nested fields using dot notation:
 
-Example auto-sync configuration:
+```json
+{
+  "searchValue": "javascript",
+  "returnFields": "name,profile.bio,contact.email"
+}
+```
 
+**Note**: The extension must be configured with nested searchable fields like `profile.bio,profile.skills,contact.email` during installation.
+
+### Array Field Search
+
+Search within array fields:
+
+```json
+{
+  "searchValue": "tutorial"
+}
+```
+
+**Note**: The extension must be configured with array fields like `tags,categories` as searchable fields during installation.
+
+### Single Collection Configuration
+
+The extension is configured to search a single, specific collection during installation. This provides:
+
+- **Enhanced Security**: Collection access is locked during installation
+- **Simplified API**: No need to specify collection in each request
+- **Better Performance**: Optimized for single collection searches
+- **Reduced Complexity**: Fewer parameters to manage
+
+```json
+// Simple search request - collection is pre-configured
+{
+  "searchValue": "john",
+  "returnFields": "name,email",
+  "limit": 10
+}
+```
+
+## 🔍 Fuzzy Search
+
+The extension includes intelligent fuzzy search with typo tolerance to improve user experience.
+
+### How It Works
+- **Typo Tolerance**: Allows 1 typo per 4 characters in search terms
+- **Smart Matching**: Uses Levenshtein distance algorithm for accurate results
+- **Configurable**: Can be enabled/disabled during installation
+- **Performance Optimized**: Short terms (≤3 chars) use exact matching for speed
+
+### Examples
 ```javascript
+// These searches will all match "Firebase":
+"Firebase"  // Exact match
+"Firebas"   // 1 typo in 8 characters (allowed)
+"Firebaes"  // 1 typo in 9 characters (allowed)
+"Firebaze"  // 1 typo in 9 characters (allowed)
+
+// These will match "John":
+"John"      // Exact match
+"Jon"       // Short term, uses exact matching
+"Jhon"      // 1 typo in 4 characters (allowed)
+```
+
+### Configuration
+- **Default**: Enabled (recommended for better UX)
+- **Disable**: Set to "No" during installation for exact matching only
+- **Automatic**: Short search terms (≤3 chars) always use exact matching
+
+## 🔄 Data Transformation
+
+The extension automatically transforms Firestore-specific data types into clean, usable JSON:
+
+### Automatic Conversions
+- **Firestore Timestamps** → **UTC ISO Strings**
+  ```javascript
+  // Before: { "_seconds": 1739112493, "_nanoseconds": 753000000 }
+  // After: "2025-01-09T14:01:33.753Z"
+  ```
+
+- **Firestore References** → **Document Paths**
+  ```javascript
+  // Before: { "_path": { "segments": ["users", "abc123"] } }
+  // After: "users/abc123"
+  ```
+
+- **Primitive Values** → **Clean Types** (strings, numbers, booleans preserved)
+- **Maps and Arrays** → **Preserved Structure** (with transformed contents)
+
+### Benefits
+- **Frontend Ready**: No need to handle Firestore-specific objects
+- **JSON Compatible**: Perfect for REST APIs and web applications
+- **Type Safe**: Consistent data types across all responses
+- **Performance**: Reduced payload size and parsing overhead
+
+## 🔐 Security Features
+
+- **Input Validation**: All parameters are validated for type and format
+- **Pre-configured Access**: Collection and searchable fields locked during installation
+- **Field Name Validation**: Prevents injection attacks through field names
+- **Rate Limiting**: Configurable per-origin request limiting
+- **Error Sanitization**: Error messages don't leak sensitive information
+
+## 🛡️ Rate Limiting
+
+The extension includes configurable rate limiting to prevent abuse and ensure fair usage:
+
+### Configuration
+- **Requests per minute**: Set during installation (default: 60)
+- **Time window**: Rolling window in minutes (default: 1)
+- **Per-origin tracking**: Limits applied per IP address
+- **Disable option**: Set to 0 to disable rate limiting
+
+### Rate Limit Headers
+All responses include rate limit information:
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1640995200
+```
+
+### Rate Limit Exceeded Response
+When limits are exceeded (HTTP 429):
+```json
 {
-  "collectionName": "posts",
-  "config": {
-    "enabled": true,
-    "framerWebhookUrl": "https://your-framer-webhook.com",
-    "mappingConfig": {
-      "title": { "type": "string", "framerType": "string" },
-      "content": { "type": "string", "framerType": "formattedText" },
-      "publishDate": { "type": "timestamp", "framerType": "date" },
-      "featured": { "type": "boolean", "framerType": "boolean" }
-    },
-    "autoSync": true
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests. Limit: 60 requests per 1 minute(s). Try again later.",
+    "timestamp": "2024-01-15T10:30:00.000Z",
+    "retryAfter": 45
   }
 }
 ```
 
-## 🎨 Framer Plugin Usage
+## 🚨 Error Codes
 
-### Configuration Mode
-1. Create a new Managed Collection in Framer
-2. The plugin will open in configuration mode
-3. Enter your Firebase Cloud Function URL
-4. Specify the Firestore collection name
-5. Optionally configure custom field mappings
-6. Test the connection
+| Code | Description |
+|------|-------------|
+| `VALIDATION_ERROR` | Invalid input parameters |
+| `PERMISSION_DENIED` | Insufficient permissions or Firestore API not enabled |
+| `NOT_FOUND` | Collection or document not found |
+| `QUOTA_EXCEEDED` | Firestore quotas exceeded |
+| `RATE_LIMIT_EXCEEDED` | Too many requests from origin (HTTP 429) |
+| `METHOD_NOT_ALLOWED` | Invalid HTTP method (only GET/POST allowed) |
+| `INTERNAL_ERROR` | General server error |
 
-### Sync Mode
-- **Manual Sync**: Click "Sync Now" to immediately sync data
-- **Auto-Sync**: Enable automatic synchronization on Firestore changes
-- **View Logs**: Monitor sync operations and troubleshoot issues
+## 🛠️ Development & Testing
 
-### Field Mapping Override
-If the automatic field detection doesn't work perfectly for your use case, you can override specific fields:
+### Local Testing
 
-```javascript
-{
-  "description": { "type": "string", "framerType": "formattedText" },
-  "priority": { "type": "number", "framerType": "number" },
-  "tags": { "type": "array", "framerType": "array", "arrayItemType": "string" }
-}
-```
-
-## 🏗️ Architecture
-
-```
-Firestore Collection
-       ↓
-Firebase Cloud Function (Analysis & Transformation)
-       ↓
-Framer CMS Collection (via Plugin/Webhook)
-```
-
-### Key Components
-
-1. **Field Analysis Engine**: Automatically detects field types and patterns
-2. **Data Transformation Layer**: Converts between Firestore and Framer formats
-3. **Sync Orchestrator**: Manages bi-directional synchronization
-4. **Configuration Manager**: Stores and retrieves sync settings
-5. **Logging System**: Tracks all operations for debugging and monitoring
-
-## 🔐 Security Considerations
-
-- **CORS Configuration**: Properly configured for Framer domain access
-- **API Key Support**: Optional API key authentication for webhooks
-- **Input Validation**: All inputs are validated and sanitized
-- **Error Handling**: Comprehensive error handling with detailed logging
-
-## 📊 Monitoring & Logging
-
-All sync operations are logged with:
-- Timestamp
-- Collection name
-- Number of documents processed
-- Operation type (create, update, delete, manual)
-- Success/error status
-- Detailed error messages
-
-Access logs via:
-- Framer plugin UI
-- `/getSyncLogs` API endpoint
-- Firebase Console logs
-
-## 🛠️ Development
-
-### Local Development
+If you want to test locally during development:
 
 ```bash
 # Start Firebase emulators
 firebase emulators:start
 
-# Develop Framer plugin
-cd framer-plugin
-npm run dev
-```
-
-### Testing
-
-```bash
-# Test the sync function
-curl -X POST http://localhost:5001/your-project/us-central1/syncToFramer \
+# Test the function (make sure to configure the extension with a test collection first)
+curl -X POST "http://localhost:5001/YOUR_PROJECT_ID/us-central1/ext-firestore-search-extension-searchCollectionHttp" \
   -H "Content-Type: application/json" \
   -d '{
-    "collectionName": "test-collection",
-    "mappingConfig": {}
+    "searchValue": "test",
+    "limit": 5
   }'
 ```
 
-## 🤝 Contributing
+### Performance Considerations
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- **Limit Results**: Always set appropriate limits for your use case
+- **Field Filtering**: Use `returnFields` to reduce response size
+- **Collection Size**: Performance depends on collection size and query complexity
+- **Indexing**: Consider Firestore indexes for frequently searched fields
 
-## 📝 License
+## 📝 Best Practices
 
-MIT License - see LICENSE file for details
+1. **Use Field Filtering**: Specify `returnFields` to reduce bandwidth
+2. **Set Reasonable Limits**: Don't request more data than needed
+3. **Handle Errors Gracefully**: Always check the `success` field in responses
+4. **Cache Results**: Consider caching frequently accessed search results
+5. **Monitor Usage**: Keep track of search patterns and performance
 
-## 🆘 Support
+## 🆘 Troubleshooting
 
-- **Issues**: Open an issue on GitHub
-- **Documentation**: Check the inline code comments
-- **Examples**: See the `examples/` directory for sample configurations
+### Common Issues
+
+1. **"Firestore API not enabled"**: Enable Firestore API in Google Cloud Console
+2. **"Collection not found"**: Ensure the collection exists and has documents
+3. **"Permission denied"**: Check Firestore security rules
+4. **"Invalid field name"**: Field names must contain only alphanumeric characters, dots, and underscores
+
+### Getting Help
+
+- Check the Firebase Console logs for detailed error information
+- Ensure your Firestore security rules allow read access
+- Verify that the extension is properly installed and configured
+
+## 💝 Support This Extension
+
+If you find this extension useful, cost-saving, or it helps streamline your development workflow, consider supporting its continued development:
+
+**[☕ Donate via Yoco](https://pay.yoco.com/twiqle)**
+
+Your support helps maintain and improve this extension with new features, bug fixes, and comprehensive documentation. Every contribution, no matter the size, is greatly appreciated! 🙏
+
+## 📄 License
+
+Apache-2.0 License - see the extension documentation for details.
+
+## 🔗 Links
+
+- [Firebase Extensions Hub](https://extensions.dev/)
+- [Firestore Documentation](https://firebase.google.com/docs/firestore)
+- [Extension Installation Guide](https://firebase.google.com/docs/extensions/install-extensions)
 
 ---
 
-**Built with ❤️ using Firebase Cloud Functions and Framer CMS**
+**Built with ❤️ for the Firebase community**

@@ -1,0 +1,255 @@
+# Firebase Search Extension Configuration
+# This extension provides configurable search functionality for Firestore collections
+
+name: firestore-search-extension
+version: 1.0.0
+specVersion: v1beta
+
+displayName: Firestore Search Extension
+description: >-
+  Provides HTTP-based search functionality for Firestore collections with 
+  intelligent fuzzy search, automatic data transformation, and advanced filtering options.
+  Features include typo tolerance (1 per 4 characters), clean JSON output with converted 
+  timestamps and references, configurable rate limiting, and enhanced security.
+  Access via REST API endpoints for server-to-server or web application integration.
+  
+  💝 Support: If you find this extension useful, consider supporting its development at https://pay.yoco.com/twiqle
+
+license: Apache-2.0
+
+sourceUrl: https://github.com/elytrontwiqle/FirebaseSearch
+releaseNotesUrl: https://github.com/elytrontwiqle/FirebaseSearch/releases
+
+author:
+  authorName: Elytron
+  email: support@elytron.dev
+  url: https://github.com/elytrontwiqle
+
+contributors:
+  - authorName: Elytron
+    email: support@elytron.dev
+
+billingRequired: true
+
+externalServices:
+  - name: Firestore
+    pricingUri: https://firebase.google.com/pricing
+
+apis:
+  - apiName: firestore.googleapis.com
+    reason: Needed to read and search Firestore collections
+
+roles:
+  - role: datastore.user
+    reason: Allows the extension to read from Firestore collections
+
+resources:
+  - name: search${param:SEARCH_COLLECTION}Http
+    type: firebaseextensions.v1beta.function
+    description: >-
+      HTTP endpoint for searching the ${param:SEARCH_COLLECTION} collection with configurable parameters.
+      Supports both GET and POST methods for REST API access, web applications, and server-to-server communication.
+      Provides comprehensive search functionality with field filtering, case sensitivity options, and result limiting.
+    properties:
+      location: ${param:LOCATION}
+      runtime: nodejs20
+      httpsTrigger: {}
+
+  - name: onInstallHandler
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Handles extension installation lifecycle events
+    properties:
+      location: ${param:LOCATION}
+      runtime: nodejs20
+      taskQueueTrigger: {}
+
+  - name: onUpdateHandler
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Handles extension update lifecycle events
+    properties:
+      location: ${param:LOCATION}
+      runtime: nodejs20
+      taskQueueTrigger: {}
+
+  - name: onConfigureHandler
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Handles extension configuration lifecycle events
+    properties:
+      location: ${param:LOCATION}
+      runtime: nodejs20
+      taskQueueTrigger: {}
+
+params:
+  - param: LOCATION
+    label: Cloud Functions location
+    description: >-
+      Where do you want to deploy the functions created for this extension?
+      For help selecting a location, refer to the [location selection guide](https://firebase.google.com/docs/functions/locations).
+    type: select
+    options:
+      - label: Iowa (us-central1)
+        value: us-central1
+      - label: South Carolina (us-east1)
+        value: us-east1
+      - label: Northern Virginia (us-east4)
+        value: us-east4
+      - label: Los Angeles (us-west2)
+        value: us-west2
+      - label: Salt Lake City (us-west3)
+        value: us-west3
+      - label: Las Vegas (us-west4)
+        value: us-west4
+      - label: Warsaw (europe-central2)
+        value: europe-central2
+      - label: Belgium (europe-west1)
+        value: europe-west1
+      - label: London (europe-west2)
+        value: europe-west2
+      - label: Frankfurt (europe-west3)
+        value: europe-west3
+      - label: Zurich (europe-west6)
+        value: europe-west6
+      - label: Hong Kong (asia-east2)
+        value: asia-east2
+      - label: Tokyo (asia-northeast1)
+        value: asia-northeast1
+      - label: Osaka (asia-northeast2)
+        value: asia-northeast2
+      - label: Seoul (asia-northeast3)
+        value: asia-northeast3
+      - label: Mumbai (asia-south1)
+        value: asia-south1
+      - label: Jakarta (asia-southeast2)
+        value: asia-southeast2
+      - label: Montreal (northamerica-northeast1)
+        value: northamerica-northeast1
+      - label: Sao Paulo (southamerica-east1)
+        value: southamerica-east1
+      - label: Sydney (australia-southeast1)
+        value: australia-southeast1
+    default: us-central1
+    required: true
+    immutable: true
+
+  - param: DEFAULT_SEARCH_LIMIT
+    label: Default search result limit
+    description: >-
+      What should be the default maximum number of search results returned?
+      Users can override this in their search requests, but it will be capped at 1000.
+    type: string
+    default: "50"
+    required: false
+    validationRegex: "^[1-9][0-9]*$"
+    validationErrorMessage: Must be a positive integer
+
+  - param: MAX_SEARCH_LIMIT
+    label: Maximum search result limit
+    description: >-
+      What should be the absolute maximum number of search results that can be returned?
+      This prevents performance issues with very large result sets.
+    type: string
+    default: "1000"
+    required: false
+    validationRegex: "^[1-9][0-9]*$"
+    validationErrorMessage: Must be a positive integer
+
+  - param: ENABLE_CASE_SENSITIVE_SEARCH
+    label: Enable case-sensitive search by default
+    description: >-
+      Should searches be case-sensitive by default? Users can override this setting
+      in individual search requests.
+    type: select
+    options:
+      - label: No (case-insensitive)
+        value: "false"
+      - label: Yes (case-sensitive)
+        value: "true"
+    default: "false"
+    required: true
+
+  - param: SEARCH_COLLECTION
+    label: Search collection
+    description: >-
+      The Firestore collection name that will be searched by this extension.
+      This collection must exist in your Firestore database.
+    type: string
+    required: true
+    example: "products"
+    validationRegex: "^[a-zA-Z0-9_-]+$"
+    validationErrorMessage: Collection name must contain only alphanumeric characters, hyphens, and underscores
+
+  - param: SEARCHABLE_FIELDS
+    label: Searchable fields
+    description: >-
+      Comma-separated list of field names that can be searched within the collection.
+      These fields will be used for text matching when performing searches.
+    type: string
+    required: true
+    example: "title,description,tags"
+
+  - param: RATE_LIMIT_REQUESTS_PER_MINUTE
+    label: Rate limit - Requests per minute per origin
+    description: >-
+      Maximum number of search requests allowed per minute from a single origin (IP address).
+      This helps prevent abuse and ensures fair usage. Set to 0 to disable rate limiting.
+    type: string
+    default: "60"
+    required: false
+    validationRegex: "^[0-9]+$"
+    validationErrorMessage: Must be a non-negative integer
+
+  - param: RATE_LIMIT_WINDOW_MINUTES
+    label: Rate limit - Time window in minutes
+    description: >-
+      Time window in minutes for rate limiting. Requests are counted within this rolling window.
+      For example, with a 5-minute window, the system tracks requests from the last 5 minutes.
+    type: string
+    default: "1"
+    required: false
+    validationRegex: "^[1-9][0-9]*$"
+    validationErrorMessage: Must be a positive integer
+
+  - param: DEFAULT_RETURN_FIELDS
+    label: Default return fields
+    description: >-
+      Default fields to return in search results (comma-separated). 
+      Leave empty to return all fields by default. 
+      Users can override this by specifying returnFields in their requests.
+      Supports nested fields using dot notation (e.g., user.profile.name).
+    type: string
+    default: ""
+    required: false
+    example: "id,name,email,createdAt,user.profile.name"
+    validationRegex: "^$|^[a-zA-Z_][a-zA-Z0-9_.]*(?:,[a-zA-Z_][a-zA-Z0-9_.]*)*$"
+    validationErrorMessage: Must be empty or a comma-separated list of valid field names (letters, numbers, underscores, dots)
+
+  - param: ENABLE_FUZZY_SEARCH
+    label: Enable fuzzy search
+    description: >-
+      Enable fuzzy search with typo tolerance. When enabled, allows 1 typo per 4 characters 
+      (e.g., 4-letter words allow 1 typo, 8-letter words allow 2 typos).
+      This improves user experience by finding matches even with minor spelling errors.
+    type: select
+    options:
+      - label: Yes (Enable fuzzy search)
+        value: "true"
+      - label: No (Exact matching only)
+        value: "false"
+    default: "true"
+    required: true
+
+
+
+lifecycleEvents:
+  onInstall:
+    function: onInstallHandler
+    processingMessage: Setting up Firestore Search Extension...
+  onUpdate:
+    function: onUpdateHandler
+    processingMessage: Updating Firestore Search Extension...
+  onConfigure:
+    function: onConfigureHandler
+    processingMessage: Configuring Firestore Search Extension...

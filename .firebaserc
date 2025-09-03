@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "tabletocoast"
+  },
+  "targets": {},
+  "etags": {
+    "elytron-d037c": {
+      "extensionInstances": {
+        "firestore-search-extension": "a96baebc20af4229f0a5e6992decf127bec13118042232d511dce262b1415fdc"
+      }
+    }
+  }
+}

@@ -1,255 +1,340 @@
 /**
- * Basic Usage Examples for Firebase Firestore ↔ Framer CMS Sync
+ * Basic Usage Examples for Firebase Firestore Search Extension
  * 
- * This file demonstrates common usage patterns for the sync system.
+ * This file demonstrates common usage patterns for the HTTP-based search functionality.
+ * Replace YOUR_PROJECT_ID and YOUR_REGION with your actual Firebase project details.
+ * 
+ * Features demonstrated:
+ * - Basic search with configurable return fields
+ * - Fuzzy search with typo tolerance (1 typo per 4 characters)
+ * - Rate limiting with headers and error handling
+ * - Data transformation (timestamps → ISO strings, references → paths)
+ * - Case sensitivity options
+ * - Nested field support
+ * 
+ * NOTE: The collection and searchable fields are configured during extension installation.
+ * You only need to provide the searchValue and optional parameters like returnFields, limit, etc.
  */
 
-// Example 1: Basic sync from Firestore to Framer
-async function basicSync() {
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/syncToFramer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      collectionName: 'blog_posts',
-      // No mappingConfig needed - system will auto-detect field types
-    })
-  });
+// Base URL for your search extension (latest version)
+// Replace [COLLECTION_NAME] with your actual collection name (e.g., searchUsersHttp, searchProductsHttp)
+const SEARCH_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-search[COLLECTION_NAME]Http';
 
-  const result = await response.json();
-  console.log('Sync result:', result);
-}
+// Example 1: Basic search functionality with specific return fields
+async function basicSearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'john',
+        returnFields: 'name,email,profileImage', // Override default return fields
+        limit: 10
+      })
+    });
 
-// Example 2: Sync with custom field mapping
-async function customFieldMappingSync() {
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/syncToFramer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      collectionName: 'products',
-      mappingConfig: {
-        // Override automatic detection for specific fields
-        'description': { type: 'string', framerType: 'formattedText' },
-        'price': { type: 'number', framerType: 'number' },
-        'inStock': { type: 'boolean', framerType: 'boolean' },
-        'images': { type: 'array', framerType: 'array', arrayItemType: 'image' },
-        'category': { type: 'string', framerType: 'enum', cases: [
-          { id: 'electronics', name: 'Electronics' },
-          { id: 'clothing', name: 'Clothing' },
-          { id: 'books', name: 'Books' }
-        ]},
-        'publishDate': { type: 'timestamp', framerType: 'date' }
-      }
-    })
-  });
-
-  const result = await response.json();
-  console.log('Custom mapping sync result:', result);
-}
-
-// Example 3: Setup auto-sync configuration
-async function setupAutoSync() {
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/setSyncConfig', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      collectionName: 'news_articles',
-      config: {
-        enabled: true,
-        autoSync: true,
-        framerWebhookUrl: 'https://your-framer-webhook-url.com/webhook',
-        mappingConfig: {
-          'title': { type: 'string', framerType: 'string' },
-          'content': { type: 'string', framerType: 'formattedText' },
-          'author': { type: 'string', framerType: 'string' },
-          'publishDate': { type: 'timestamp', framerType: 'date' },
-          'featured': { type: 'boolean', framerType: 'boolean' },
-          'tags': { type: 'array', framerType: 'array' },
-          'coverImage': { type: 'string', framerType: 'image' }
-        }
-      }
-    })
-  });
-
-  const result = await response.json();
-  console.log('Auto-sync setup result:', result);
-}
-
-// Example 4: Bi-directional sync (Framer to Firestore)
-async function syncFromFramer() {
-  // This would typically be called from a Framer webhook or plugin
-  const framerData = [
-    {
-      id: 'article-1',
-      slug: 'my-first-article',
-      fieldData: {
-        title: { type: 'string', value: 'My First Article' },
-        content: { type: 'formattedText', value: '<p>This is the article content...</p>' },
-        author: { type: 'string', value: 'John Doe' },
-        publishDate: { type: 'date', value: '2024-01-15T10:00:00Z' },
-        featured: { type: 'boolean', value: true },
-        tags: { type: 'array', value: ['technology', 'web-development'] }
+    const result = await response.json();
+    
+    // Check rate limiting headers
+    console.log('Rate Limit Info:');
+    console.log('- Limit:', response.headers.get('X-RateLimit-Limit'));
+    console.log('- Remaining:', response.headers.get('X-RateLimit-Remaining'));
+    console.log('- Reset:', response.headers.get('X-RateLimit-Reset'));
+    
+    if (result.success) {
+      console.log('Search results:', result.data);
+      console.log('Total results:', result.meta.totalResults);
+    } else {
+      console.error('Search failed:', result.error.message);
+      if (result.error.code === 'RATE_LIMIT_EXCEEDED') {
+        console.log('Rate limit exceeded. Retry after:', result.error.retryAfter, 'seconds');
       }
     }
-  ];
-
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/syncFromFramer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      collectionName: 'articles',
-      framerData: framerData,
-      mappingConfig: {
-        'title': { type: 'string', framerType: 'string' },
-        'content': { type: 'string', framerType: 'formattedText' },
-        'author': { type: 'string', framerType: 'string' },
-        'publishDate': { type: 'timestamp', framerType: 'date' },
-        'featured': { type: 'boolean', framerType: 'boolean' },
-        'tags': { type: 'array', framerType: 'array' }
-      }
-    })
-  });
-
-  const result = await response.json();
-  console.log('Framer to Firestore sync result:', result);
+  } catch (error) {
+    console.error('Request failed:', error.message);
+  }
 }
 
-// Example 5: Get sync logs for monitoring
-async function getSyncLogs() {
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/getSyncLogs?collectionName=blog_posts&limit=20');
-  const result = await response.json();
-  
-  console.log('Recent sync logs:');
-  result.logs.forEach(log => {
-    console.log(`${log.timestamp}: ${log.status} - ${log.documentCount} items (${log.changeType})`);
-    if (log.status === 'error') {
-      console.error('Error details:', log.result);
+// Example 2: Search using default return fields (configured during installation)
+async function searchWithDefaultFields() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'firebase',
+        // No returnFields specified - uses default fields configured during installation
+        limit: 5
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Search with default fields:', result.data);
+      console.log('Fields returned:', Object.keys(result.data[0] || {}));
+    } else {
+      console.error('Search failed:', result.error.message);
     }
-  });
+  } catch (error) {
+    console.error('Request failed:', error.message);
+  }
 }
 
-// Example 6: Complex e-commerce product sync
-async function ecommerceProductSync() {
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/syncToFramer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      collectionName: 'products',
-      mappingConfig: {
-        // Product basics
-        'name': { type: 'string', framerType: 'string' },
-        'description': { type: 'string', framerType: 'formattedText' },
-        'shortDescription': { type: 'string', framerType: 'string' },
-        
-        // Pricing
-        'price': { type: 'number', framerType: 'number' },
-        'salePrice': { type: 'number', framerType: 'number' },
-        'currency': { type: 'string', framerType: 'string' },
-        
-        // Inventory
-        'stock': { type: 'number', framerType: 'number' },
-        'inStock': { type: 'boolean', framerType: 'boolean' },
-        'lowStockThreshold': { type: 'number', framerType: 'number' },
-        
-        // Media
-        'images': { type: 'array', framerType: 'array', arrayItemType: 'image' },
-        'featuredImage': { type: 'string', framerType: 'image' },
-        
-        // Categories and tags
-        'category': { type: 'string', framerType: 'collectionReference', collectionId: 'categories' },
-        'tags': { type: 'array', framerType: 'multiCollectionReference', collectionId: 'tags' },
-        
-        // Metadata
-        'sku': { type: 'string', framerType: 'string' },
-        'weight': { type: 'number', framerType: 'number' },
-        'dimensions': { type: 'object', framerType: 'string' }, // Will be JSON stringified
-        'createdAt': { type: 'timestamp', framerType: 'date' },
-        'updatedAt': { type: 'timestamp', framerType: 'date' },
-        
-        // SEO
-        'metaTitle': { type: 'string', framerType: 'string' },
-        'metaDescription': { type: 'string', framerType: 'string' },
-        'slug': { type: 'string', framerType: 'string' }
-      }
-    })
-  });
-
-  const result = await response.json();
-  console.log('E-commerce product sync result:', result);
-}
-
-// Example 7: Blog post with author relationship
-async function blogPostWithAuthorSync() {
-  const response = await fetch('https://your-region-your-project.cloudfunctions.net/syncToFramer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      collectionName: 'blog_posts',
-      mappingConfig: {
-        'title': { type: 'string', framerType: 'string' },
-        'content': { type: 'string', framerType: 'formattedText' },
-        'excerpt': { type: 'string', framerType: 'string' },
-        'author': { type: 'string', framerType: 'collectionReference', collectionId: 'authors' },
-        'categories': { type: 'array', framerType: 'multiCollectionReference', collectionId: 'categories' },
-        'tags': { type: 'array', framerType: 'array' },
-        'featuredImage': { type: 'string', framerType: 'image' },
-        'publishDate': { type: 'timestamp', framerType: 'date' },
-        'lastModified': { type: 'timestamp', framerType: 'date' },
-        'status': { 
-          type: 'string', 
-          framerType: 'enum',
-          cases: [
-            { id: 'draft', name: 'Draft' },
-            { id: 'published', name: 'Published' },
-            { id: 'archived', name: 'Archived' }
-          ]
-        },
-        'featured': { type: 'boolean', framerType: 'boolean' },
-        'readTime': { type: 'number', framerType: 'number' },
-        'viewCount': { type: 'number', framerType: 'number' }
-      }
-    })
-  });
-
-  const result = await response.json();
-  console.log('Blog post sync result:', result);
-}
-
-// Example 8: Error handling and retry logic
-async function syncWithErrorHandling() {
-  const maxRetries = 3;
-  let retryCount = 0;
-
-  while (retryCount < maxRetries) {
-    try {
-      const response = await fetch('https://your-region-your-project.cloudfunctions.net/syncToFramer', {
+// Example 3: Fuzzy search demonstration (typo tolerance)
+async function fuzzySearchDemo() {
+  try {
+    console.log('=== Fuzzy Search Demo ===');
+    
+    // Search with intentional typos - these should still find matches
+    const typoSearches = [
+      'Firebas',    // Missing 'e' - should match "Firebase"
+      'Jhon',       // Swapped letters - should match "John"
+      'Googl',      // Missing 'e' - should match "Google"
+      'Reactt'      // Extra 't' - should match "React"
+    ];
+    
+    for (const searchTerm of typoSearches) {
+      const response = await fetch(SEARCH_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          collectionName: 'events',
-          mappingConfig: {
-            'title': { type: 'string', framerType: 'string' },
-            'description': { type: 'string', framerType: 'formattedText' },
-            'startDate': { type: 'timestamp', framerType: 'date' },
-            'endDate': { type: 'timestamp', framerType: 'date' },
-            'location': { type: 'string', framerType: 'string' },
-            'price': { type: 'number', framerType: 'number' },
-            'capacity': { type: 'number', framerType: 'number' },
-            'isVirtual': { type: 'boolean', framerType: 'boolean' }
-          }
+          searchValue: searchTerm,
+          limit: 3
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(`\nSearch: "${searchTerm}" found ${result.meta.totalResults} results`);
+        result.data.forEach((item, index) => {
+          console.log(`  ${index + 1}. ${item.name || item.title || item.id}`);
+        });
+      } else {
+        console.log(`\nSearch: "${searchTerm}" - ${result.error.message}`);
+      }
+    }
+  } catch (error) {
+    console.error('Fuzzy search demo failed:', error.message);
+  }
+}
+
+// Example 4: Search with specific return fields
+async function searchWithReturnFields() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'laptop',
+        returnFields: 'title,price,imageUrl,brand',
+        limit: 20
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Product search results:');
+      result.data.forEach(product => {
+        console.log(`- ${product.title}: $${product.price} (${product.brand})`);
+      });
+    } else {
+      console.error('Product search failed:', result.error.message);
+    }
+  } catch (error) {
+    console.error('Request failed:', error.message);
+  }
+}
+
+// Example 3: Case-sensitive search
+async function caseSensitiveSearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'JavaScript',
+        returnFields: 'title,author,publishedAt',
+        caseSensitive: true,
+        limit: 15
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Case-sensitive search results:', result.data.length);
+      result.data.forEach(article => {
+        console.log(`- ${article.title}`);
+      });
+    }
+  } catch (error) {
+    console.error('Case-sensitive search failed:', error.message);
+  }
+}
+
+// Example 4: Nested field search
+async function nestedFieldSearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'premium',
+        returnFields: 'orderId,customer.name,totalAmount,status,shipping.address.city',
+        limit: 25
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Nested field search results:');
+      result.data.forEach(order => {
+        console.log(`Order ${order.orderId}: ${order.customer.name} - $${order.totalAmount}`);
+      });
+    }
+  } catch (error) {
+    console.error('Nested field search failed:', error.message);
+  }
+}
+
+// Example 5: GET request (query parameters)
+async function getRequestExample() {
+  try {
+    const params = new URLSearchParams({
+      searchValue: 'developer',
+      returnFields: 'name,email,profileImage',
+      limit: '10',
+      caseSensitive: 'false'
+    });
+
+    const response = await fetch(`${SEARCH_URL}?${params}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('GET request results:', result.data);
+    }
+  } catch (error) {
+    console.error('GET request failed:', error.message);
+  }
+}
+
+// Example 6: E-commerce product search
+async function ecommerceProductSearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'wireless headphones',
+        returnFields: 'name,price,imageUrl,brand,rating,inStock,category',
+        limit: 50
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('E-commerce search results:');
+      result.data.forEach(product => {
+        const availability = product.inStock ? 'In Stock' : 'Out of Stock';
+        console.log(`${product.name} - $${product.price} (${product.brand}) - ${availability}`);
+      });
+    }
+  } catch (error) {
+    console.error('E-commerce search failed:', error.message);
+  }
+}
+
+// Example 7: User directory search
+async function userDirectorySearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'marketing',
+        returnFields: 'displayName,email,profilePhoto,department,jobTitle',
+        limit: 20
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Employee directory search:');
+      result.data.forEach(employee => {
+        console.log(`${employee.displayName} - ${employee.jobTitle} (${employee.department})`);
+      });
+    }
+  } catch (error) {
+    console.error('User directory search failed:', error.message);
+  }
+}
+
+// Example 8: Content management search
+async function contentSearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'firebase tutorial',
+        returnFields: 'title,excerpt,author.name,publishedAt,featuredImage,category',
+        limit: 15
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Content search results:');
+      result.data.forEach(article => {
+        const publishDate = new Date(article.publishedAt).toLocaleDateString();
+        console.log(`"${article.title}" by ${article.author.name} - ${publishDate}`);
+      });
+    }
+  } catch (error) {
+    console.error('Content search failed:', error.message);
+  }
+}
+
+// Example 9: Search with error handling and retry logic
+async function searchWithErrorHandling(value, options = {}) {
+  const maxRetries = 3;
+  let retryCount = 0;
+
+  while (retryCount < maxRetries) {
+    try {
+      const response = await fetch(SEARCH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          searchValue: value,
+          ...options
         })
       });
 
@@ -260,18 +345,18 @@ async function syncWithErrorHandling() {
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.error || 'Sync failed');
+        throw new Error(result.error.message || 'Search failed');
       }
 
-      console.log('Sync successful:', result);
-      return result;
+      console.log('Search successful:', result.meta);
+      return result.data;
 
     } catch (error) {
       retryCount++;
-      console.error(`Sync attempt ${retryCount} failed:`, error.message);
+      console.error(`Search attempt ${retryCount} failed:`, error.message);
       
       if (retryCount >= maxRetries) {
-        console.error('Max retries reached. Sync failed permanently.');
+        console.error('Max retries reached. Search failed permanently.');
         throw error;
       }
       
@@ -283,14 +368,176 @@ async function syncWithErrorHandling() {
   }
 }
 
-// Export examples for use in other files
-module.exports = {
-  basicSync,
-  customFieldMappingSync,
-  setupAutoSync,
-  syncFromFramer,
-  getSyncLogs,
-  ecommerceProductSync,
-  blogPostWithAuthorSync,
-  syncWithErrorHandling
-};
+// Example 10: Reusable search function
+async function searchFirestore(value, options = {}) {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: value,
+        ...options
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      return {
+        data: result.data,
+        meta: result.meta,
+        success: true
+      };
+    } else {
+      return {
+        error: result.error,
+        success: false
+      };
+    }
+  } catch (error) {
+    return {
+      error: { message: error.message, code: 'NETWORK_ERROR' },
+      success: false
+    };
+  }
+}
+
+// Example usage of the reusable function
+async function demonstrateReusableFunction() {
+  // Search for users (assuming extension is configured for users collection)
+  const userResults = await searchFirestore(
+    'john',
+    { 
+      returnFields: 'name,email,profileImage',
+      limit: 10,
+      caseSensitive: false 
+    }
+  );
+
+  if (userResults.success) {
+    console.log('Found users:', userResults.data.length);
+  } else {
+    console.error('User search failed:', userResults.error.message);
+  }
+
+  // Another search with different parameters
+  const moreResults = await searchFirestore(
+    'wireless',
+    { 
+      returnFields: 'title,price,brand',
+      limit: 25 
+    }
+  );
+
+  if (moreResults.success) {
+    console.log('Found more results:', moreResults.data.length);
+  } else {
+    console.error('Second search failed:', moreResults.error.message);
+  }
+}
+
+// Example 11: Array field search
+async function arrayFieldSearch() {
+  try {
+    const response = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchValue: 'tutorial',
+        returnFields: 'title,tags,categories,publishedAt',
+        limit: 20
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Articles with "tutorial" in arrays:');
+      result.data.forEach(article => {
+        console.log(`- ${article.title} (Tags: ${article.tags?.join(', ') || 'None'})`);
+      });
+    }
+  } catch (error) {
+    console.error('Array field search failed:', error.message);
+  }
+}
+
+// Example 12: Rate limiting test
+async function testRateLimit() {
+  console.log('Testing rate limiting...');
+  
+  for (let i = 1; i <= 65; i++) {
+    try {
+      const response = await fetch(SEARCH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          searchValue: 'test',
+          limit: 1
+        })
+      });
+
+      const result = await response.json();
+      const remaining = response.headers.get('X-RateLimit-Remaining');
+      
+      console.log(`Request ${i}: Status ${response.status}, Remaining: ${remaining}`);
+      
+      if (response.status === 429) {
+        console.log('Rate limit exceeded!');
+        console.log('Error:', result.error.message);
+        console.log('Retry after:', result.error.retryAfter, 'seconds');
+        break;
+      }
+      
+      // Small delay between requests
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+    } catch (error) {
+      console.error(`Request ${i} failed:`, error.message);
+    }
+  }
+}
+
+// Export functions for use in other files or testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    basicSearch,
+    searchWithDefaultFields,
+    fuzzySearchDemo,
+    searchWithReturnFields,
+    caseSensitiveSearch,
+    nestedFieldSearch,
+    getRequestExample,
+    ecommerceProductSearch,
+    userDirectorySearch,
+    contentSearch,
+    searchWithErrorHandling,
+    searchFirestore,
+    demonstrateReusableFunction,
+    arrayFieldSearch,
+    testRateLimit
+  };
+}
+
+// Run examples if this file is executed directly
+if (typeof window === 'undefined' && require.main === module) {
+  console.log('Running Firestore Search Extension examples...\n');
+  
+  // Uncomment the examples you want to test
+  // basicSearch();
+  // searchWithReturnFields();
+  // caseSensitiveSearch();
+  // nestedFieldSearch();
+  // getRequestExample();
+  // ecommerceProductSearch();
+  // userDirectorySearch();
+  // contentSearch();
+  // demonstrateReusableFunction();
+  // arrayFieldSearch();
+}
