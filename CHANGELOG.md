@@ -5,6 +5,33 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-01-28
+
+### Added
+- Intelligent fuzzy search with typo tolerance (1 typo per 4 characters)
+- Automatic data transformation for clean JSON output:
+  - Firestore Timestamps converted to UTC ISO strings
+  - Firestore DocumentReferences converted to database paths
+- Configurable default return fields during installation
+- Per-origin rate limiting with configurable limits
+- Dynamic endpoint naming based on collection (e.g., `searchUsersHttp` for `users` collection)
+- Enhanced security with pre-configured searchable fields (no longer accepted as request parameters)
+
+### Changed
+- Extension now HTTP-only (removed callable function for better REST API focus)
+- Searchable fields are now configuration-only (cannot be overridden via API requests)
+- Improved error handling with `RATE_LIMIT_EXCEEDED` error code
+- Enhanced documentation with comprehensive feature descriptions
+
+### Removed
+- Callable function interface (`searchCollection`)
+- Detailed logging feature (simplified for better performance)
+- Client-side searchable fields parameter (security enhancement)
+
+### Fixed
+- Repository URLs corrected to point to proper GitHub location
+- Extension metadata updated for accurate publication information
+
 ## [1.0.0] - 2024-01-15
 
 ### Added
