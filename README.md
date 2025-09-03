@@ -52,23 +52,20 @@ During installation, configure these parameters:
 
 After installation, your search endpoint will be available at:
 ```
-https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-search[COLLECTION_NAME]Http
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp
 ```
 
-**Example**: If you configure the extension to search a collection named `users`, your endpoint will be:
-```
-https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchUsersHttp
-```
+**Note**: The endpoint name is static (`searchCollectionHttp`) regardless of which collection you configure. The collection to search is determined by the extension configuration, not the endpoint name.
 
 ### Multiple Extension Instances
 
-When you install this extension multiple times for different collections, each gets a unique, descriptive endpoint:
+When you install this extension multiple times for different collections, each instance gets its own unique endpoint based on the extension instance ID:
 
-- **Users collection**: `...search**Users**Http`
-- **Products collection**: `...search**Products**Http` 
-- **Orders collection**: `...search**Orders**Http`
+- **First instance**: `...ext-firestore-search-extension-**abc1**-searchCollectionHttp`
+- **Second instance**: `...ext-firestore-search-extension-**def2**-searchCollectionHttp`
+- **Third instance**: `...ext-firestore-search-extension-**ghi3**-searchCollectionHttp`
 
-This makes it easy to identify and manage multiple search endpoints in your application.
+Each instance can be configured to search a different collection, making it easy to manage multiple search endpoints.
 
 ### Supported Methods
 
@@ -98,7 +95,7 @@ This makes it easy to identify and manage multiple search endpoints in your appl
 ### POST Request (JSON Body)
 
 ```bash
-curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchUsersHttp" \
+curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp" \
   -H "Content-Type: application/json" \
   -d '{
     "searchValue": "john",
@@ -113,7 +110,7 @@ curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firesto
 ### GET Request (Query Parameters)
 
 ```bash
-curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchProductsHttp?searchValue=laptop&returnFields=title,price,description&limit=20&sortBy=price&direction=desc"
+curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp?searchValue=laptop&returnFields=title,price,description&limit=20&sortBy=price&direction=desc"
 ```
 
 ### JavaScript/TypeScript Example

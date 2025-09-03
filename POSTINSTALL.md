@@ -22,10 +22,10 @@ The extension has created the following Cloud Function in your project:
 
 Your extension HTTP endpoint is available at:
 ```
-https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-search${param:SEARCH_COLLECTION}Http
+https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp
 ```
 
-This endpoint name includes your configured collection name (${param:SEARCH_COLLECTION}) making it easy to identify when you have multiple search extensions installed.
+This endpoint searches your configured collection (${param:SEARCH_COLLECTION}). When you have multiple search extensions installed, each gets a unique instance ID in the URL.
 
 ## Quick Start
 
@@ -33,7 +33,7 @@ This endpoint name includes your configured collection name (${param:SEARCH_COLL
 
 #### POST Request (Recommended)
 ```bash
-curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-search${param:SEARCH_COLLECTION}Http" \
+curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp" \
   -H "Content-Type: application/json" \
   -d '{
     "returnFields": "title,price,imageUrl",
@@ -46,7 +46,7 @@ curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/e
 
 #### GET Request
 ```bash
-curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-search${param:SEARCH_COLLECTION}Http?searchValue=admin&limit=5"
+curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp?searchValue=admin&limit=5"
 ```
 
 ### JavaScript Integration

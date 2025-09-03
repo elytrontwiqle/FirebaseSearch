@@ -2,7 +2,7 @@
 # This extension provides configurable search functionality for Firestore collections
 
 name: firestore-search-extension
-version: 1.0.2
+version: 1.0.3
 specVersion: v1beta
 
 displayName: Firestore Search Extension
@@ -17,17 +17,19 @@ description: >-
 
 license: Apache-2.0
 
+icon: icon.png
+
 sourceUrl: https://github.com/elytrontwiqle/FirebaseSearch
 releaseNotesUrl: https://github.com/elytrontwiqle/FirebaseSearch/releases
 
 author:
   authorName: Elytron
-  email: support@elytron.dev
+  email: buyiledmhlanga@gmail.com
   url: https://github.com/elytrontwiqle
 
 contributors:
   - authorName: Elytron
-    email: support@elytron.dev
+    email: buyiledmhlanga@gmail.com
 
 billingRequired: true
 
@@ -44,7 +46,7 @@ roles:
     reason: Allows the extension to read from Firestore collections
 
 resources:
-  - name: search${param:SEARCH_COLLECTION}Http
+  - name: searchCollectionHttp
     type: firebaseextensions.v1beta.function
     description: >-
       HTTP endpoint for searching the ${param:SEARCH_COLLECTION} collection with configurable parameters.

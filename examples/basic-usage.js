@@ -18,8 +18,8 @@
  */
 
 // Base URL for your search extension (latest version)
-// Replace [COLLECTION_NAME] with your actual collection name (e.g., searchUsersHttp, searchProductsHttp)
-const SEARCH_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-search[COLLECTION_NAME]Http';
+// The endpoint name is always 'searchCollectionHttp' regardless of your collection name
+const SEARCH_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp';
 
 // Example 1: Basic search functionality with specific return fields
 async function basicSearch() {

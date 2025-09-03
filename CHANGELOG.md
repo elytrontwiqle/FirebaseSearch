@@ -5,6 +5,24 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-01-28
+
+### Fixed
+- **Function Naming Issue**: Fixed deployment error caused by dynamic function naming
+  - Changed from `search${param:SEARCH_COLLECTION}Http` to static `searchCollectionHttp`
+  - Resolves Cloud Functions deployment error with parameter substitution in resource names
+- **Icon Configuration**: Added `icon.png` configuration to extension.yaml
+- **Contact Information**: Updated author and contributor email to `buyiledmhlanga@gmail.com`
+
+### Changed
+- **Endpoint URL**: Function endpoint is now consistently named `searchCollectionHttp`
+- **Documentation**: Updated all documentation to reflect static endpoint naming
+- **Multiple Instances**: Clarified how multiple extension instances work with unique instance IDs
+
+### Breaking Changes
+- **Endpoint Name**: The function endpoint is now always `searchCollectionHttp` instead of dynamic collection-based naming
+- **Migration**: If upgrading from previous versions, update your API calls to use the new static endpoint name
+
 ## [1.0.2] - 2025-01-28
 
 ### Added

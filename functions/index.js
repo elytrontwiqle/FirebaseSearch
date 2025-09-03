@@ -231,11 +231,8 @@ function fuzzyMatch(searchTerm, fieldValue, caseSensitive = false) {
  * Note: The collection and searchable fields are configured during extension installation
  */
 
-// Create dynamic function name based on collection
-const collectionName = config.searchCollection || 'Collection';
-const functionName = `search${collectionName}Http`;
-
-exports[functionName] = onRequest({
+// Export function with static name (required for Firebase Extensions)
+exports.searchCollectionHttp = onRequest({
   cors: true,
   region: config.location
 }, async (request, response) => {
