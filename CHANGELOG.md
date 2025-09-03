@@ -5,6 +5,21 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2025-01-28
+
+### Fixed
+- **String Sorting Improvement**: Enhanced string comparison in sorting logic
+  - Added `.trim()` to remove leading/trailing whitespace before comparison
+  - Improved consistency between values like `"Mhlanga"` vs `"Mhlanga "` (with trailing space)
+  - Better handling of mixed case values in sorting (case-insensitive comparison)
+  - Ensures proper ascending/descending order for string fields
+
+### Technical Details
+- String values are now trimmed and converted to lowercase before comparison
+- Mixed type values are also trimmed when converted to strings
+- Maintains existing null/undefined handling (placed at end)
+- Preserves numeric and date sorting behavior
+
 ## [1.0.4] - 2025-01-28
 
 ### Fixed

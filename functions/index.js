@@ -535,17 +535,17 @@ async function performSearch({
         
         // Handle different data types
         if (typeof valueA === 'string' && typeof valueB === 'string') {
-          // String comparison (case-insensitive)
-          compareA = valueA.toLowerCase();
-          compareB = valueB.toLowerCase();
+          // String comparison (case-insensitive, trimmed)
+          compareA = valueA.trim().toLowerCase();
+          compareB = valueB.trim().toLowerCase();
         } else if (typeof valueA === 'number' && typeof valueB === 'number') {
           // Numeric comparison - use as is
         } else if (valueA instanceof Date && valueB instanceof Date) {
           // Date comparison - use as is
         } else {
-          // Mixed types - convert to strings
-          compareA = String(valueA).toLowerCase();
-          compareB = String(valueB).toLowerCase();
+          // Mixed types - convert to strings (case-insensitive, trimmed)
+          compareA = String(valueA).trim().toLowerCase();
+          compareB = String(valueB).trim().toLowerCase();
         }
         
         if (compareA < compareB) return -1 * sortDirection;
