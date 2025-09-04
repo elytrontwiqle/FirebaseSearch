@@ -2,7 +2,7 @@
 # This extension provides configurable search functionality for Firestore collections
 
 name: firestore-search-extension
-version: 1.2.2
+version: 1.2.3
 specVersion: v1beta
 
 displayName: Firestore Search Extension
@@ -12,6 +12,8 @@ description: >-
   Features include typo tolerance (1 per 4 characters), clean JSON output with converted 
   timestamps and references, configurable rate limiting, and enhanced security.
   Access via REST API endpoints for server-to-server or web application integration.
+
+tags: [search]
   
   💝 Support: If you find this extension useful, consider supporting its development at https://pay.yoco.com/twiqle
 
