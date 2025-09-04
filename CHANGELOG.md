@@ -5,6 +5,28 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-01-28
+
+### Added
+- **🔍 Enhanced Debugging**: Comprehensive logging for search troubleshooting
+  - Document-level field checking with detailed logs for first 3 documents
+  - Field value logging to identify data structure issues
+  - Match detection logging to trace search logic
+- **🛡️ Bulletproof Fallback**: Automatic fallback search mechanism
+  - If optimized query returns no results, automatically tries simple collection scan
+  - Ensures search results are found even if query optimization fails
+  - Separate fallback logic with independent error handling
+
+### Improved
+- **Search Reliability**: Multiple layers of search logic to ensure results are found
+- **Debugging Capabilities**: Detailed logging to identify why searches might fail
+- **Error Recovery**: Graceful fallback when optimized queries don't work as expected
+
+### Technical Details
+- **Debug Logging**: Shows field values, search comparisons, and match results for first 3 documents
+- **Fallback Strategy**: Tries simple collection scan (limit 100 docs) if optimized query returns 0 results
+- **Error Isolation**: Fallback errors don't affect main search logic
+
 ## [1.2.1] - 2025-01-28
 
 ### Fixed

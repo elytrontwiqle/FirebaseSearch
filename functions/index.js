@@ -642,10 +642,23 @@ async function performSearch({
         if (fieldValue !== null && fieldValue !== undefined) {
           const stringValue = String(fieldValue);
           
+          // Debug logging for first few documents
+          if (matchCount < 3) {
+            console.log(`Checking doc ${doc.id}: field "${field}" = "${stringValue}" against search "${searchValue}"`);
+          }
+          
           // Use fuzzy matching if enabled, otherwise fall back to exact matching
           if (fuzzyMatch(searchValue, stringValue, caseSensitive)) {
             isMatch = true;
+            if (matchCount < 3) {
+              console.log(`✅ Match found in doc ${doc.id} for field "${field}"`);
+            }
             break;
+          }
+        } else {
+          // Debug logging for missing fields
+          if (matchCount < 3) {
+            console.log(`⚠️  Field "${field}" is null/undefined in doc ${doc.id}`);
           }
         }
       }
@@ -720,6 +733,66 @@ async function performSearch({
     
     const processingTime = Date.now() - startTime;
     console.log(`Search completed in ${processingTime}ms: ${transformedResults.length} results from ${snapshot.size} documents scanned`);
+    
+    // If no results found and we used an optimized query, try a simple collection scan as fallback
+    if (transformedResults.length === 0 && usedOptimizedQuery) {
+      console.log('No results from optimized query, trying simple collection scan as fallback...');
+      
+      try {
+        const fallbackSnapshot = await collectionRef.limit(Math.min(limit * 3, 100)).get();
+        console.log(`Fallback scan found ${fallbackSnapshot.size} documents to check`);
+        
+        const fallbackResults = [];
+        let fallbackMatchCount = 0;
+        
+        fallbackSnapshot.forEach((doc) => {
+          if (fallbackMatchCount >= limit) return;
+          
+          const data = doc.data();
+          let isMatch = false;
+          
+          for (const field of searchFields) {
+            const fieldValue = getNestedFieldValue(data, field);
+            
+            if (fieldValue !== null && fieldValue !== undefined) {
+              const stringValue = String(fieldValue);
+              
+              if (fuzzyMatch(searchValue, stringValue, caseSensitive)) {
+                isMatch = true;
+                break;
+              }
+            }
+          }
+          
+          if (isMatch) {
+            let resultDoc = { id: doc.id };
+            
+            if (returnFields && returnFields.length > 0) {
+              for (const field of returnFields) {
+                const fieldValue = getNestedFieldValue(data, field);
+                setNestedFieldValue(resultDoc, field, fieldValue);
+              }
+            } else {
+              resultDoc = { id: doc.id, ...data };
+            }
+            
+            fallbackResults.push({
+              rawDoc: resultDoc,
+              originalData: data
+            });
+            fallbackMatchCount++;
+          }
+        });
+        
+        if (fallbackResults.length > 0) {
+          console.log(`✅ Fallback found ${fallbackResults.length} results`);
+          const fallbackTransformed = fallbackResults.map(item => transformFirestoreData(item.rawDoc));
+          return fallbackTransformed;
+        }
+      } catch (fallbackError) {
+        console.error('Fallback search failed:', fallbackError);
+      }
+    }
     
     // Log performance warning if search took too long
     if (processingTime > 1000) {

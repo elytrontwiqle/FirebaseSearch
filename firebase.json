@@ -25,7 +25,5 @@
     },
     "singleProjectMode": true
   },
-  "extensions": {
-    "firestore-search-extension": "."
-  }
+  "extensions": {}
 }
