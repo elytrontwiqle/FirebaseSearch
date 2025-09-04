@@ -36,22 +36,48 @@ const rateLimitStore = new Map();
 
 /**
  * Extract collection name from URL path
- * Expected format: /ext-firestore-search-extension-searchCollectionHttp/{collectionName}
+ * Firebase Functions URL format: /ext-{instanceId}-searchCollectionHttp/{collectionName}
+ * Full URL: https://region-project.cloudfunctions.net/ext-{instanceId}-searchCollectionHttp/{collectionName}
  */
 function extractCollectionFromPath(request) {
   const path = request.path || request.url;
-  const pathParts = path.split('/').filter(part => part.length > 0);
+  console.log('Debug - Full path:', path); // Debug logging
   
-  // Find the function name part and get the next part as collection
-  const functionNameIndex = pathParts.findIndex(part => 
-    part.includes('searchCollectionHttp') || part === 'searchCollectionHttp'
-  );
+  // Remove query parameters if present
+  const pathWithoutQuery = path.split('?')[0];
+  const pathParts = pathWithoutQuery.split('/').filter(part => part.length > 0);
   
-  if (functionNameIndex >= 0 && pathParts.length > functionNameIndex + 1) {
-    return pathParts[functionNameIndex + 1];
+  console.log('Debug - Path parts:', pathParts); // Debug logging
+  
+  // For Firebase Functions, the path is just the collection name after the function name
+  // The function name is handled by Firebase routing, so we get the remaining path
+  // If path is just "/" or empty, no collection specified
+  if (pathParts.length === 0) {
+    return null;
   }
   
-  return null;
+  // The first path part should be the collection name
+  // Handle cases where the path might have the function name included
+  let collectionName = null;
+  
+  // Check if the path contains the function name (for local testing or direct calls)
+  const functionNameIndex = pathParts.findIndex(part => 
+    part.includes('searchCollectionHttp')
+  );
+  
+  if (functionNameIndex >= 0) {
+    // Function name found in path, collection is the next part
+    if (pathParts.length > functionNameIndex + 1) {
+      collectionName = pathParts[functionNameIndex + 1];
+    }
+  } else {
+    // Function name not in path (normal Firebase Functions routing)
+    // First path part should be the collection name
+    collectionName = pathParts[0];
+  }
+  
+  console.log('Debug - Extracted collection:', collectionName); // Debug logging
+  return collectionName;
 }
 
 /**

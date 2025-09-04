@@ -5,6 +5,20 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-01-28
+
+### Fixed
+- **URL Path Parsing**: Fixed collection name extraction from Firebase Functions URL structure
+  - Improved `extractCollectionFromPath` function to handle Firebase Functions routing
+  - Added debug logging to help troubleshoot path parsing issues
+  - Now correctly extracts collection name from URLs like `/ext-{instanceId}-searchCollectionHttp/{collection}`
+- **Documentation URLs**: Added `readmeUrl` to extension.yaml for proper documentation linking
+
+### Technical Details
+- Enhanced path parsing logic to handle both direct function calls and Firebase Functions routing
+- Added comprehensive logging for debugging URL path issues
+- Improved error handling for malformed URLs
+
 ## [1.1.1] - 2025-01-28
 
 ### Fixed
