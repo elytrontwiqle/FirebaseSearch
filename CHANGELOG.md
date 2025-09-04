@@ -5,6 +5,19 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2025-01-28
+
+### Added
+- **Configurable Typo Tolerance**: New `FUZZY_SEARCH_TYPO_TOLERANCE` parameter allows users to configure the character-to-typo ratio for fuzzy search
+  - Default: 4 characters per typo (maintains backward compatibility)
+  - Configurable range: Any positive integer (minimum 1)
+  - Lower values = stricter matching, higher values = more lenient matching
+  - Examples: 3 = stricter (1 typo per 3 chars), 5 = more lenient (1 typo per 5 chars)
+
+### Changed
+- **Fuzzy Search Logic**: Updated to use configurable typo tolerance instead of hardcoded 4-character rule
+- **Documentation**: Updated all documentation to reflect configurable typo tolerance feature
+
 ## [1.0.8] - 2025-01-28
 
 ### Fixed

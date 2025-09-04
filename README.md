@@ -6,7 +6,7 @@ A powerful HTTP-based search extension for Firebase Firestore that provides dedi
 
 - **HTTP REST API**: Simple HTTP endpoints for easy integration with any application
 - **Pre-configured Search**: Collection and searchable fields configured during installation
-- **Fuzzy Search**: Intelligent typo tolerance (1 typo per 4 characters) for better UX
+- **Fuzzy Search**: Configurable typo tolerance for better UX (default: 1 typo per 4 characters)
 - **Result Sorting**: Sort results by any field with ascending/descending options
 - **Data Transformation**: Automatic conversion of Firestore timestamps and references to clean JSON
 - **Field Filtering**: Return only specific fields to optimize response size
@@ -42,7 +42,8 @@ During installation, configure these parameters:
 - **Default Search Limit**: Default maximum results (default: 50)
 - **Maximum Search Limit**: Absolute maximum results (default: 1000)
 - **Case Sensitivity**: Default case sensitivity setting
-- **Fuzzy Search**: Enable typo tolerance (1 typo per 4 characters, default: enabled)
+- **Fuzzy Search**: Enable typo tolerance (default: enabled)
+- **Typo Tolerance**: Characters per typo in fuzzy search (default: 4)
 - **Rate Limiting**: Configure requests per minute per origin (default: 60)
 - **Rate Limit Window**: Time window for rate limiting in minutes (default: 1)
 
@@ -335,13 +336,18 @@ The extension supports flexible result sorting to help you organize search resul
 
 ## 🔍 Fuzzy Search
 
-The extension includes intelligent fuzzy search with typo tolerance to improve user experience.
+The extension includes intelligent fuzzy search with configurable typo tolerance to improve user experience.
 
 ### How It Works
-- **Typo Tolerance**: Allows 1 typo per 4 characters in search terms
+- **Configurable Typo Tolerance**: Allows 1 typo per N characters (default: 4, configurable during installation)
 - **Smart Matching**: Uses Levenshtein distance algorithm for accurate results
 - **Configurable**: Can be enabled/disabled during installation
 - **Performance Optimized**: Short terms (≤3 chars) use exact matching for speed
+
+### Tolerance Examples
+- **Tolerance = 4** (default): 4-letter words allow 1 typo, 8-letter words allow 2 typos
+- **Tolerance = 3** (stricter): 3-letter words allow 1 typo, 6-letter words allow 2 typos  
+- **Tolerance = 5** (more lenient): 5-letter words allow 1 typo, 10-letter words allow 2 typos
 
 ### Examples
 ```javascript

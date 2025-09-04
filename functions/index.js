@@ -25,7 +25,8 @@ const config = {
   rateLimitWindowMinutes: parseInt(process.env.RATE_LIMIT_WINDOW_MINUTES) || 1,
   defaultReturnFields: process.env.DEFAULT_RETURN_FIELDS ? 
     process.env.DEFAULT_RETURN_FIELDS.split(',').map(f => f.trim()) : [],
-  enableFuzzySearch: process.env.ENABLE_FUZZY_SEARCH === 'true'
+  enableFuzzySearch: process.env.ENABLE_FUZZY_SEARCH === 'true',
+  fuzzySearchTypoTolerance: parseInt(process.env.FUZZY_SEARCH_TYPO_TOLERANCE) || 4
 };
 
 // In-memory rate limiting storage
@@ -159,15 +160,15 @@ function levenshteinDistance(str1, str2) {
 
 /**
  * Calculate maximum allowed typos based on string length
- * Rule: 1 typo per 4 characters
+ * Rule: 1 typo per N characters (configurable via FUZZY_SEARCH_TYPO_TOLERANCE)
  */
 function getMaxTypos(length) {
-  return Math.floor(length / 4);
+  return Math.floor(length / config.fuzzySearchTypoTolerance);
 }
 
 /**
  * Check if two strings match with fuzzy tolerance
- * Allows 1 typo per 4 characters
+ * Allows 1 typo per N characters (configurable via FUZZY_SEARCH_TYPO_TOLERANCE)
  */
 function fuzzyMatch(searchTerm, fieldValue, caseSensitive = false) {
   if (!config.enableFuzzySearch) {

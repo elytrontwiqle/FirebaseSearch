@@ -13,7 +13,7 @@ The extension has created the following Cloud Function in your project:
 - **CORS**: Enabled for web application integration
 
 ### Key Features Enabled
-- **🔍 Fuzzy Search**: Typo tolerance (1 per 4 characters) for better user experience
+- **🔍 Fuzzy Search**: Configurable typo tolerance for better user experience
 - **🔄 Data Transformation**: Automatic conversion of Firestore timestamps and references to clean JSON
 - **🛡️ Rate Limiting**: Per-origin request limiting to prevent abuse
 - **🔐 Security**: Pre-configured collection and searchable fields for enhanced security
@@ -92,7 +92,8 @@ Your extension was configured with:
 - **Default Search Limit**: ${param:DEFAULT_SEARCH_LIMIT}
 - **Maximum Search Limit**: ${param:MAX_SEARCH_LIMIT}
 - **Case Sensitive Search**: ${param:ENABLE_CASE_SENSITIVE_SEARCH}
-- **Fuzzy Search**: ${param:ENABLE_FUZZY_SEARCH} (typo tolerance: 1 per 4 characters)
+- **Fuzzy Search**: ${param:ENABLE_FUZZY_SEARCH}
+- **Typo Tolerance**: 1 typo per ${param:FUZZY_SEARCH_TYPO_TOLERANCE} characters
 - **Rate Limit (per minute)**: ${param:RATE_LIMIT_REQUESTS_PER_MINUTE}
 - **Rate Limit Window**: ${param:RATE_LIMIT_WINDOW_MINUTES} minute(s)
 

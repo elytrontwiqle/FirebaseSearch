@@ -2,7 +2,7 @@
 # This extension provides configurable search functionality for Firestore collections
 
 name: firestore-search-extension
-version: 1.0.8
+version: 1.0.9
 specVersion: v1beta
 
 displayName: Firestore Search Extension
@@ -231,8 +231,8 @@ params:
   - param: ENABLE_FUZZY_SEARCH
     label: Enable fuzzy search
     description: >-
-      Enable fuzzy search with typo tolerance. When enabled, allows 1 typo per 4 characters 
-      (e.g., 4-letter words allow 1 typo, 8-letter words allow 2 typos).
+      Enable fuzzy search with typo tolerance. When enabled, allows typos based on the 
+      configured tolerance ratio (see FUZZY_SEARCH_TYPO_TOLERANCE parameter).
       This improves user experience by finding matches even with minor spelling errors.
     type: select
     options:
@@ -242,6 +242,19 @@ params:
         value: "false"
     default: "true"
     required: true
+
+  - param: FUZZY_SEARCH_TYPO_TOLERANCE
+    label: Fuzzy search - Characters per typo tolerance
+    description: >-
+      Number of characters per allowed typo in fuzzy search. For example, with a value of 4:
+      4-letter words allow 1 typo, 8-letter words allow 2 typos, etc.
+      Lower values are more strict (fewer typos allowed), higher values are more lenient.
+      Only applies when ENABLE_FUZZY_SEARCH is enabled.
+    type: string
+    default: "4"
+    required: false
+    validationRegex: "^[1-9][0-9]*$"
+    validationErrorMessage: Must be a positive integer (minimum 1)
 
 
 
