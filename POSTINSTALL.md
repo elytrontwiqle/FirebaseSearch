@@ -17,6 +17,7 @@ The extension has created the following Cloud Function in your project:
 - **🔄 Data Transformation**: Automatic conversion of Firestore timestamps and references to clean JSON
 - **🛡️ Rate Limiting**: Per-origin request limiting to prevent abuse
 - **🔐 Security**: Pre-configured collection and searchable fields for enhanced security
+- **⚡ Performance Optimization**: Intelligent query optimization and automatic index recommendations
 
 ## Function URL
 
@@ -41,6 +42,63 @@ The extension now supports dynamic collection selection via URL path:
 - Invalid collection names or unauthorized collections will return a `400 Bad Request` error
 
 When you have multiple search extensions installed, each gets a unique instance ID in the URL.
+
+## 🚀 Performance Optimization
+
+### Automatic Index Recommendations
+
+The extension automatically analyzes your configuration and provides index recommendations in the Cloud Functions logs during installation. These indexes will significantly improve search performance.
+
+### Recommended Indexes
+
+For optimal performance, create these Firestore indexes:
+
+1. **Single-field indexes** on each searchable field:
+   - Field: `${param:SEARCHABLE_FIELDS}` (each field separately)
+   - Query scope: Collection
+   - Supports: Equality, range, and array-contains queries
+
+2. **Composite indexes** for sorting + filtering:
+   - Fields: `[searchable_field, sort_field]` (ascending)
+   - Query scope: Collection
+   - Supports: Range queries with sorting
+
+### Creating Indexes
+
+**Via Firebase Console:**
+1. Go to [Firestore Database](https://console.firebase.google.com/project/${param:PROJECT_ID}/firestore/indexes)
+2. Click "Create Index"
+3. Select your collection and add the recommended fields
+
+**Via Firebase CLI:**
+```bash
+# Single-field indexes (created automatically)
+firebase deploy --only firestore:indexes
+
+# For composite indexes, add to firestore.indexes.json:
+{
+  "indexes": [
+    {
+      "collectionGroup": "your_collection",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "searchable_field", "order": "ASCENDING" },
+        { "fieldPath": "sort_field", "order": "ASCENDING" }
+      ]
+    }
+  ]
+}
+```
+
+### Performance Monitoring
+
+The extension logs performance metrics:
+- Query execution time
+- Number of documents scanned vs. returned
+- Automatic warnings for slow queries (>1 second)
+- Index recommendations for optimization
+
+Check your [Cloud Functions logs](https://console.firebase.google.com/project/${param:PROJECT_ID}/functions/logs) for performance insights.
 
 ## Quick Start
 

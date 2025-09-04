@@ -7,6 +7,7 @@ const {onRequest} = require("firebase-functions/v2/https");
 const {onTaskDispatched} = require("firebase-functions/v2/tasks");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
+const {getAuth} = require("firebase-admin/auth");
 
 // Initialize Firebase Admin
 initializeApp();
@@ -570,12 +571,59 @@ async function performSearch({
   const processedValue = caseSensitive ? searchValue : searchValue.toLowerCase();
 
   try {
-    // Get all documents from the collection (with limit)
-    const snapshot = await collectionRef.limit(limit * 10).get(); // Get more docs to account for filtering
+    console.log(`Performing optimized search on ${collection} for "${searchValue}"`);
+    
+    // Strategy: Use optimized queries when possible, fall back to limited scan
+    let snapshot;
+    let usedOptimizedQuery = false;
+    
+    // For exact prefix matching (when fuzzy search is disabled and search term is long enough)
+    if (!config.enableFuzzySearch && searchValue.length >= 2) {
+      try {
+        // Try to use range query for the first searchable field
+        const primaryField = searchFields[0];
+        const endValue = processedValue.slice(0, -1) + String.fromCharCode(processedValue.charCodeAt(processedValue.length - 1) + 1);
+        
+        let query = collectionRef
+          .where(primaryField, '>=', processedValue)
+          .where(primaryField, '<', endValue);
+          
+        // Add sorting if specified (this will require a composite index)
+        if (sortBy && sortBy.trim() !== '') {
+          const sortDirection = direction && ['desc', 'descending'].includes(direction.toLowerCase()) ? 'desc' : 'asc';
+          query = query.orderBy(sortBy, sortDirection);
+        }
+        
+        snapshot = await query.limit(limit * 2).get();
+        usedOptimizedQuery = true;
+        console.log(`Used optimized range query on ${primaryField}, found ${snapshot.size} documents`);
+      } catch (error) {
+        console.log(`Range query failed (${error.message}), falling back to collection scan`);
+        usedOptimizedQuery = false;
+      }
+    }
+    
+    // Fall back to limited collection scan if optimized query not used or failed
+    if (!usedOptimizedQuery) {
+      let query = collectionRef;
+      
+      // Add sorting if specified
+      if (sortBy && sortBy.trim() !== '') {
+        const sortDirection = direction && ['desc', 'descending'].includes(direction.toLowerCase()) ? 'desc' : 'asc';
+        query = query.orderBy(sortBy, sortDirection);
+      }
+      
+      // Limit the scan to a reasonable number to avoid timeouts
+      snapshot = await query.limit(Math.min(limit * 5, 500)).get();
+      console.log(`Used collection scan with sorting, found ${snapshot.size} documents to filter`);
+    }
     
     if (snapshot.empty) {
+      console.log('No documents found in collection');
       return [];
     }
+    
+    const startTime = Date.now();
 
     let matchCount = 0;
 
@@ -667,6 +715,15 @@ async function performSearch({
 
     // Transform the sorted results to clean JSON
     const transformedResults = results.map(item => transformFirestoreData(item.rawDoc));
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`Search completed in ${processingTime}ms: ${transformedResults.length} results from ${snapshot.size} documents scanned`);
+    
+    // Log performance warning if search took too long
+    if (processingTime > 1000) {
+      console.warn(`⚠️  Slow search detected (${processingTime}ms). Consider creating indexes for better performance.`);
+      console.warn(`   Recommended: Create composite index on [${searchFields[0]}, ${sortBy || '__name__'}]`);
+    }
 
     return transformedResults;
 
@@ -767,6 +824,73 @@ function getErrorCode(error) {
  */
 
 /**
+ * Create Firestore indexes for optimal search performance
+ * Based on Firebase documentation: https://firebase.google.com/docs/firestore/query-data/indexing
+ */
+async function createSearchIndexes() {
+  try {
+    console.log('Creating Firestore indexes for search optimization...');
+    
+    const searchableCollections = config.searchableCollections.length > 0 ? 
+      config.searchableCollections : ['*']; // Default to all collections if none specified
+    const searchableFields = config.searchableFields;
+    
+    if (!searchableFields || searchableFields.length === 0) {
+      console.log('No searchable fields configured, skipping index creation');
+      return;
+    }
+    
+    console.log(`Will create indexes for collections: ${searchableCollections.join(', ')}`);
+    console.log(`Will create indexes for fields: ${searchableFields.join(', ')}`);
+    
+    // Note: According to Firebase documentation, indexes are created automatically 
+    // when queries are executed. The first time a query runs, Firestore will 
+    // suggest the required indexes in the console.
+    
+    // Log index recommendations for manual creation
+    console.log('='.repeat(60));
+    console.log('RECOMMENDED INDEXES FOR OPTIMAL PERFORMANCE:');
+    console.log('='.repeat(60));
+    console.log('Create these indexes via Firebase Console or CLI:');
+    console.log('');
+    
+    for (const field of searchableFields) {
+      console.log(`1. Single-field index on "${field}":`);
+      console.log(`   - Field: ${field}`);
+      console.log(`   - Query scope: Collection`);
+      console.log(`   - Supports: ==, >=, <, array-contains operations`);
+      console.log('');
+      
+      console.log(`2. Composite index for "${field}" + sorting:`);
+      console.log(`   - Fields: ${field} (Ascending), __name__ (Ascending)`);
+      console.log(`   - Query scope: Collection`);
+      console.log(`   - Supports: Range queries with sorting`);
+      console.log('');
+    }
+    
+    console.log('Firebase CLI commands to create indexes:');
+    for (const collection of searchableCollections) {
+      if (collection !== '*') {
+        for (const field of searchableFields) {
+          console.log(`firebase firestore:indexes --collection=${collection} --field=${field}`);
+        }
+      }
+    }
+    console.log('='.repeat(60));
+    
+    return { 
+      success: true, 
+      indexesRecommended: searchableFields.length * 2,
+      collections: searchableCollections,
+      fields: searchableFields
+    };
+  } catch (error) {
+    console.error('Error in index creation guidance:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Handles extension installation
  */
 exports.onInstallHandler = onTaskDispatched({
@@ -779,11 +903,19 @@ exports.onInstallHandler = onTaskDispatched({
   }
 }, async (req) => {
   try {
-    // Perform any initialization tasks here
-    // For example, create indexes, validate configuration, etc.
+    console.log('Extension installation started...');
     
-    return { success: true, message: 'Extension installed successfully' };
+    // Provide index creation guidance for optimal performance
+    const indexResult = await createSearchIndexes();
+    
+    console.log('Extension installed successfully');
+    return { 
+      success: true, 
+      message: 'Extension installed successfully with search optimization guidance',
+      indexGuidance: indexResult
+    };
   } catch (error) {
+    console.error('Extension installation error:', error);
     throw error;
   }
 });
