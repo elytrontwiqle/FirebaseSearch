@@ -5,6 +5,23 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-01-28
+
+### Fixed
+- **🐛 Search Results Bug**: Fixed issue where optimized range queries were not finding results
+  - Range queries now only used for case-sensitive searches (exact matches)
+  - Case-insensitive searches properly fall back to collection scan with fuzzy matching
+  - Added enhanced debugging logs to help troubleshoot search issues
+- **Query Logic**: Improved query selection criteria for better reliability
+  - Increased minimum search length for range queries from 2 to 3 characters
+  - More conservative approach to using optimized queries vs. collection scans
+
+### Technical Details
+- **Root Cause**: Range queries (`>=`, `<`) only work for exact case matches in Firestore
+- **Solution**: Restrict range queries to case-sensitive searches only
+- **Fallback**: Case-insensitive searches use collection scan with proper fuzzy matching
+- **Debug Logging**: Added search configuration logging for troubleshooting
+
 ## [1.2.0] - 2025-01-28
 
 ### Added

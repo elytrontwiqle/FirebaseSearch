@@ -572,20 +572,22 @@ async function performSearch({
 
   try {
     console.log(`Performing optimized search on ${collection} for "${searchValue}"`);
+    console.log(`Search config: caseSensitive=${caseSensitive}, fuzzySearch=${config.enableFuzzySearch}, fields=[${searchFields.join(', ')}]`);
     
     // Strategy: Use optimized queries when possible, fall back to limited scan
     let snapshot;
     let usedOptimizedQuery = false;
     
     // For exact prefix matching (when fuzzy search is disabled and search term is long enough)
-    if (!config.enableFuzzySearch && searchValue.length >= 2) {
+    // Note: Range queries only work for exact case matches, so we'll be more conservative
+    if (!config.enableFuzzySearch && searchValue.length >= 3 && caseSensitive) {
       try {
-        // Try to use range query for the first searchable field
+        // Try to use range query for the first searchable field (case-sensitive only)
         const primaryField = searchFields[0];
-        const endValue = processedValue.slice(0, -1) + String.fromCharCode(processedValue.charCodeAt(processedValue.length - 1) + 1);
+        const endValue = searchValue.slice(0, -1) + String.fromCharCode(searchValue.charCodeAt(searchValue.length - 1) + 1);
         
         let query = collectionRef
-          .where(primaryField, '>=', processedValue)
+          .where(primaryField, '>=', searchValue)
           .where(primaryField, '<', endValue);
           
         // Add sorting if specified (this will require a composite index)
@@ -596,7 +598,7 @@ async function performSearch({
         
         snapshot = await query.limit(limit * 2).get();
         usedOptimizedQuery = true;
-        console.log(`Used optimized range query on ${primaryField}, found ${snapshot.size} documents`);
+        console.log(`Used optimized range query on ${primaryField} (case-sensitive), found ${snapshot.size} documents`);
       } catch (error) {
         console.log(`Range query failed (${error.message}), falling back to collection scan`);
         usedOptimizedQuery = false;
