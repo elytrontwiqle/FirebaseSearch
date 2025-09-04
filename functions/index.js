@@ -18,7 +18,8 @@ const config = {
   defaultSearchLimit: parseInt(process.env.DEFAULT_SEARCH_LIMIT) || 50,
   maxSearchLimit: parseInt(process.env.MAX_SEARCH_LIMIT) || 1000,
   enableCaseSensitiveSearch: process.env.ENABLE_CASE_SENSITIVE_SEARCH === 'true',
-  searchCollection: process.env.SEARCH_COLLECTION,
+  searchableCollections: process.env.SEARCHABLE_COLLECTIONS ? 
+    process.env.SEARCHABLE_COLLECTIONS.split(',').map(f => f.trim()) : [],
   searchableFields: process.env.SEARCHABLE_FIELDS ? 
     process.env.SEARCHABLE_FIELDS.split(',').map(f => f.trim()) : [],
   rateLimitRequestsPerMinute: parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) || 60,
@@ -32,6 +33,71 @@ const config = {
 // In-memory rate limiting storage
 // In production, consider using Redis or Firestore for distributed rate limiting
 const rateLimitStore = new Map();
+
+/**
+ * Extract collection name from URL path
+ * Expected format: /ext-firestore-search-extension-searchCollectionHttp/{collectionName}
+ */
+function extractCollectionFromPath(request) {
+  const path = request.path || request.url;
+  const pathParts = path.split('/').filter(part => part.length > 0);
+  
+  // Find the function name part and get the next part as collection
+  const functionNameIndex = pathParts.findIndex(part => 
+    part.includes('searchCollectionHttp') || part === 'searchCollectionHttp'
+  );
+  
+  if (functionNameIndex >= 0 && pathParts.length > functionNameIndex + 1) {
+    return pathParts[functionNameIndex + 1];
+  }
+  
+  return null;
+}
+
+/**
+ * Validate collection access permissions
+ */
+async function validateCollectionAccess(collectionName) {
+  // Check if collection name is valid format
+  if (!collectionName || typeof collectionName !== 'string') {
+    return {
+      valid: false,
+      error: 'Collection name is required in URL path (e.g., /searchCollectionHttp/products)'
+    };
+  }
+
+  if (!/^[a-zA-Z0-9_-]+$/.test(collectionName)) {
+    return {
+      valid: false,
+      error: 'Collection name must contain only alphanumeric characters, hyphens, and underscores'
+    };
+  }
+
+  // Check if collection is in allowed list (if configured)
+  if (config.searchableCollections.length > 0) {
+    if (!config.searchableCollections.includes(collectionName)) {
+      return {
+        valid: false,
+        error: `Collection '${collectionName}' is not allowed. Allowed collections: ${config.searchableCollections.join(', ')}`
+      };
+    }
+  }
+
+  // Check if collection exists in Firestore
+  try {
+    const collectionRef = db.collection(collectionName);
+    const snapshot = await collectionRef.limit(1).get();
+    
+    // Collection exists if it has at least one document or if it's empty but the reference is valid
+    // Note: Firestore collections don't exist until they have documents, but we'll allow empty collections
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      error: `Collection '${collectionName}' does not exist or is not accessible`
+    };
+  }
+}
 
 /**
  * Get client IP address from request
@@ -226,12 +292,13 @@ function fuzzyMatch(searchTerm, fieldValue, caseSensitive = false) {
  * Supported Methods: GET, POST
  * 
  * Parameters:
- * - returnFields: Comma-separated list of fields to return (optional, returns all if not specified)
  * - searchValue: The value to search for
  * - limit: Maximum number of results to return (optional, default: 50)
  * - caseSensitive: Whether search should be case sensitive (optional, default: false)
  * - sortBy: Field name to sort results by (optional, supports nested fields with dot notation)
  * - direction: Sort direction - 'asc', 'desc', 'ascending', or 'descending' (optional, default: 'asc')
+ * 
+ * Note: returnFields are configured during extension installation and cannot be overridden via request
  * 
  * Note: The collection and searchable fields are configured during extension installation
  */
@@ -303,7 +370,6 @@ exports.searchCollectionHttp = onRequest({
     const params = request.method === 'GET' ? request.query : request.body;
     
     const {
-      returnFields,
       searchValue,
       limit = config.defaultSearchLimit,
       caseSensitive = config.enableCaseSensitiveSearch,
@@ -311,8 +377,24 @@ exports.searchCollectionHttp = onRequest({
       direction = 'asc'
     } = params;
 
-    // Use configured collection and searchable fields
-    const searchCollection = config.searchCollection;
+    // Extract collection from URL path
+    const searchCollection = extractCollectionFromPath(request);
+    
+    // Validate collection access
+    const collectionValidation = await validateCollectionAccess(searchCollection);
+    if (!collectionValidation.valid) {
+      response.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_COLLECTION',
+          message: collectionValidation.error,
+          timestamp: new Date().toISOString()
+        }
+      });
+      return;
+    }
+    
+    // Use configured searchable fields
     const searchableFields = config.searchableFields;
 
     // Input validation
@@ -333,11 +415,9 @@ exports.searchCollectionHttp = onRequest({
       return;
     }
 
-    // Use configured searchable fields and parse return fields
+    // Use configured searchable fields and return fields
     const searchFields = searchableFields; // Already parsed in config
-    const returnFieldsList = returnFields ? 
-      parseFieldList(returnFields) : 
-      (config.defaultReturnFields.length > 0 ? config.defaultReturnFields : null);
+    const returnFieldsList = config.defaultReturnFields.length > 0 ? config.defaultReturnFields : null;
 
     // Validate limit
     const searchLimit = Math.min(Math.max(parseInt(limit) || config.defaultSearchLimit, 1), config.maxSearchLimit);
@@ -389,10 +469,6 @@ exports.searchCollectionHttp = onRequest({
  */
 function validateSearchParameters({searchValue, sortBy, direction}) {
   // Validate extension configuration
-  if (!config.searchCollection || typeof config.searchCollection !== 'string') {
-    return 'Extension configuration error: SEARCH_COLLECTION is required';
-  }
-
   if (!config.searchableFields || !Array.isArray(config.searchableFields) || config.searchableFields.length === 0) {
     return 'Extension configuration error: SEARCHABLE_FIELDS is required and must contain at least one field';
   }
@@ -404,11 +480,6 @@ function validateSearchParameters({searchValue, sortBy, direction}) {
 
   if (searchValue.trim().length === 0) {
     return 'searchValue cannot be empty';
-  }
-
-  // Validate collection name format
-  if (!/^[a-zA-Z0-9_-]+$/.test(config.searchCollection)) {
-    return 'Extension configuration error: SEARCH_COLLECTION must contain only alphanumeric characters, hyphens, and underscores';
   }
 
   // Validate sorting parameters

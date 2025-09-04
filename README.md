@@ -36,7 +36,7 @@ firebase ext:install elytron/firestore-search-extension@1.0.0-beta.9 --project=y
 
 During installation, configure these parameters:
 - **Location**: Cloud Functions deployment region
-- **Search Collection**: The single Firestore collection to search (required)
+- **Searchable Collections**: Comma-separated list of collections that can be searched (optional, leave empty to allow all collections)
 - **Searchable Fields**: Comma-separated list of fields to search in (required)
 - **Default Return Fields**: Default fields to return in results (optional, returns all if empty)
 - **Default Search Limit**: Default maximum results (default: 50)
@@ -53,10 +53,15 @@ During installation, configure these parameters:
 
 After installation, your search endpoint will be available at:
 ```
-https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/{collectionName}
 ```
 
-**Note**: The endpoint name is static (`searchCollectionHttp`) regardless of which collection you configure. The collection to search is determined by the extension configuration, not the endpoint name.
+**Examples:**
+- Search products: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products`
+- Search users: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/users`
+- Search orders: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/orders`
+
+**Note**: The collection name in the URL path determines which collection to search. Only collections configured during installation (or all collections if none specified) can be accessed.
 
 ### Multiple Extension Instances
 
@@ -85,22 +90,22 @@ Each instance can be configured to search a different collection, making it easy
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `returnFields` | string | all fields | Comma-separated list of fields to return |
 | `limit` | number | 50 | Maximum number of results |
 | `caseSensitive` | boolean | false | Whether search should be case-sensitive |
 | `sortBy` | string | none | Field name to sort results by (supports nested fields with dot notation) |
 | `direction` | string | asc | Sort direction: `asc`, `desc`, `ascending`, or `descending` |
+
+**Note**: Return fields are configured during extension installation and cannot be overridden via API requests.
 
 ## 🔧 Usage Examples
 
 ### POST Request (JSON Body)
 
 ```bash
-curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp" \
+curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/users" \
   -H "Content-Type: application/json" \
   -d '{
     "searchValue": "john",
-    "returnFields": "name,email,createdAt",
     "limit": 10,
     "caseSensitive": false,
     "sortBy": "name",
@@ -111,14 +116,14 @@ curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firesto
 ### GET Request (Query Parameters)
 
 ```bash
-curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp?searchValue=laptop&returnFields=title,price,description&limit=20&sortBy=price&direction=desc"
+curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products?searchValue=laptop&limit=20&sortBy=price&direction=desc"
 ```
 
 ### JavaScript/TypeScript Example
 
 ```javascript
 const searchFirestore = async (value, options = {}) => {
-  const response = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp', {
+  const response = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -136,9 +141,10 @@ const searchFirestore = async (value, options = {}) => {
 const results = await searchFirestore(
   'firebase',
   { 
-    returnFields: 'title,publishedAt,author.name',
     limit: 15,
-    caseSensitive: false 
+    caseSensitive: false,
+    sortBy: 'publishedAt',
+    direction: 'desc'
   }
 );
 ```
@@ -215,7 +221,6 @@ const useFirestoreSearch = (searchTerm, options = {}) => {
     "searchCollection": "users",
     "searchValue": "john",
     "searchFields": ["name", "email", "profile.bio"],
-    "returnFields": ["name", "email", "profile"],
     "sortBy": "name",
     "direction": "asc"
   }
@@ -244,7 +249,8 @@ Search and return nested fields using dot notation:
 ```json
 {
   "searchValue": "javascript",
-  "returnFields": "name,profile.bio,contact.email"
+  "limit": 20,
+  "sortBy": "name"
 }
 ```
 
@@ -275,8 +281,8 @@ The extension is configured to search a single, specific collection during insta
 // Simple search request - collection is pre-configured
 {
   "searchValue": "john",
-  "returnFields": "name,email",
-  "limit": 10
+  "limit": 10,
+  "caseSensitive": false
 }
 ```
 

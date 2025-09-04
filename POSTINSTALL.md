@@ -22,10 +22,25 @@ The extension has created the following Cloud Function in your project:
 
 Your extension HTTP endpoint is available at:
 ```
-https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp
+https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/{collectionName}
 ```
 
-This endpoint searches your configured collection (${param:SEARCH_COLLECTION}). When you have multiple search extensions installed, each gets a unique instance ID in the URL.
+### Dynamic Collection Selection
+
+The extension now supports dynamic collection selection via URL path:
+- **Format**: `{baseURL}/{collectionName}`
+- **Examples**:
+  - Search products: `{baseURL}/products`
+  - Search users: `{baseURL}/users`
+  - Search orders: `{baseURL}/orders`
+
+### Collection Access Control
+
+- If you configured specific collections during installation, only those collections can be accessed
+- If you left the collections parameter empty, all collections are accessible
+- Invalid collection names or unauthorized collections will return a `400 Bad Request` error
+
+When you have multiple search extensions installed, each gets a unique instance ID in the URL.
 
 ## Quick Start
 
@@ -33,10 +48,9 @@ This endpoint searches your configured collection (${param:SEARCH_COLLECTION}). 
 
 #### POST Request (Recommended)
 ```bash
-curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp" \
+curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/{collectionName}" \
   -H "Content-Type: application/json" \
   -d '{
-    "returnFields": "title,price,imageUrl",
     "searchValue": "laptop",
     "limit": 20,
     "sortBy": "price",
@@ -86,7 +100,7 @@ console.log('Search results:', results.data);
 ## Configuration Summary
 
 Your extension was configured with:
-- **Search Collection**: ${param:SEARCH_COLLECTION}
+- **Searchable Collections**: ${param:SEARCHABLE_COLLECTIONS} (empty = all collections allowed)
 - **Searchable Fields**: ${param:SEARCHABLE_FIELDS}
 - **Default Return Fields**: ${param:DEFAULT_RETURN_FIELDS} (empty = return all fields)
 - **Default Search Limit**: ${param:DEFAULT_SEARCH_LIMIT}
@@ -104,13 +118,12 @@ Your extension was configured with:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `searchValue` | string | Yes | The search term |
-| `returnFields` | string | No | Comma-separated fields to return (uses configured default if not specified) |
 | `limit` | number | No | Max results (default: ${param:DEFAULT_SEARCH_LIMIT}) |
 | `caseSensitive` | boolean | No | Case sensitivity (default: ${param:ENABLE_CASE_SENSITIVE_SEARCH}) |
 | `sortBy` | string | No | Field name to sort results by (supports nested fields with dot notation) |
 | `direction` | string | No | Sort direction: `asc`, `desc`, `ascending`, or `descending` (default: `asc`) |
 
-**Note**: The collection to search and searchable fields are configured during extension installation and cannot be changed via API requests.
+**Note**: The collection to search, searchable fields, and return fields are configured during extension installation and cannot be changed via API requests.
 
 ### Response Format
 
@@ -129,8 +142,7 @@ Your extension was configured with:
     "totalResults": 10,
     "searchCollection": "users",
     "searchValue": "john",
-    "searchFields": ["name", "email"],
-    "returnFields": ["name", "email", "profileImage"]
+    "searchFields": ["name", "email"]
   }
 }
 ```

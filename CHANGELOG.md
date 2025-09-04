@@ -5,6 +5,58 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-01-28
+
+### Fixed
+- **Return Fields Security**: Removed `returnFields` as a request parameter for enhanced security
+  - Return fields are now configuration-only (set during installation)
+  - Prevents users from accessing unauthorized fields via API requests
+  - Maintains consistency with `searchableFields` approach
+- **API Consistency**: All field access is now controlled by extension configuration
+- **Documentation**: Updated all examples to remove `returnFields` parameter
+
+### Changed
+- **API Breaking Change**: `returnFields` parameter no longer accepted in requests
+- **Security Model**: Return fields now locked at installation time like searchable fields
+
+### Migration Guide
+- **Remove `returnFields`**: Remove `returnFields` parameter from all API calls
+- **Configure Return Fields**: Set desired return fields during extension installation/configuration
+- **Update Client Code**: Remove any `returnFields` parameters from request bodies/query strings
+
+## [1.1.0] - 2025-01-28
+
+### Added
+- **Dynamic Collection Selection**: Collections are now selected via URL path instead of configuration
+  - New URL format: `/ext-firestore-search-extension-searchCollectionHttp/{collectionName}`
+  - Examples: `/searchCollectionHttp/products`, `/searchCollectionHttp/users`
+- **Multiple Collection Support**: Configure multiple searchable collections or allow all collections
+  - New `SEARCHABLE_COLLECTIONS` parameter (comma-separated list, optional)
+  - Leave empty to allow searching all collections (less secure but more flexible)
+  - Specify collections to restrict access (more secure)
+- **Collection Validation**: Comprehensive validation for collection access
+  - Validates collection name format (alphanumeric, hyphens, underscores only)
+  - Checks against configured allowed collections list
+  - Verifies collection exists in Firestore
+  - Returns detailed error messages for invalid collections
+
+### Changed
+- **URL Structure**: Breaking change - collection name now required in URL path
+- **Configuration**: Replaced single `SEARCH_COLLECTION` with multiple `SEARCHABLE_COLLECTIONS`
+- **Security Model**: Collection access now controlled by URL path + configuration instead of just configuration
+- **Error Handling**: Added specific `INVALID_COLLECTION` error code for collection-related issues
+
+### Removed
+- **Single Collection Mode**: No longer supports configuring just one collection
+- **Static Collection Configuration**: Collection is no longer hardcoded in configuration
+
+### Migration Guide
+- **URL Updates**: Update all API calls to include collection name in path
+  - Old: `/searchCollectionHttp?searchValue=test`
+  - New: `/searchCollectionHttp/products?searchValue=test`
+- **Configuration**: Replace `SEARCH_COLLECTION` with `SEARCHABLE_COLLECTIONS` (comma-separated)
+- **Security**: Review collection access - empty configuration now allows all collections
+
 ## [1.0.9] - 2025-01-28
 
 ### Added

@@ -13,18 +13,22 @@
  * - Case sensitivity options
  * - Nested field support
  * 
- * NOTE: The collection and searchable fields are configured during extension installation.
+ * NOTE: Searchable collections and fields are configured during extension installation.
+ * Collection name is specified in the URL path. Only configured collections (or all if none specified) can be accessed.
  * You only need to provide the searchValue and optional parameters like returnFields, limit, etc.
  */
 
 // Base URL for your search extension (latest version)
-// The endpoint name is always 'searchCollectionHttp' regardless of your collection name
-const SEARCH_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp';
+// Collection name is now specified in the URL path: {baseURL}/{collectionName}
+const BASE_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp';
+
+// Helper function to build collection-specific URL
+const getSearchURL = (collection) => `${BASE_URL}/${collection}`;
 
 // Example 1: Basic search functionality with specific return fields
 async function basicSearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -61,7 +65,7 @@ async function basicSearch() {
 // Example 2: Search using default return fields (configured during installation)
 async function searchWithDefaultFields() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -100,7 +104,7 @@ async function fuzzySearchDemo() {
     ];
     
     for (const searchTerm of typoSearches) {
-      const response = await fetch(SEARCH_URL, {
+      const response = await fetch(getSearchURL('users'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -227,7 +231,7 @@ async function sortedSearchDemo() {
 // Example 5: Search with specific return fields
 async function searchWithReturnFields() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -257,7 +261,7 @@ async function searchWithReturnFields() {
 // Example 3: Case-sensitive search
 async function caseSensitiveSearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -286,7 +290,7 @@ async function caseSensitiveSearch() {
 // Example 4: Nested field search
 async function nestedFieldSearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -335,7 +339,7 @@ async function getRequestExample() {
 // Example 6: E-commerce product search
 async function ecommerceProductSearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -364,7 +368,7 @@ async function ecommerceProductSearch() {
 // Example 7: User directory search
 async function userDirectorySearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -392,7 +396,7 @@ async function userDirectorySearch() {
 // Example 8: Content management search
 async function contentSearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -425,7 +429,7 @@ async function searchWithErrorHandling(value, options = {}) {
 
   while (retryCount < maxRetries) {
     try {
-      const response = await fetch(SEARCH_URL, {
+      const response = await fetch(getSearchURL('users'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -469,7 +473,7 @@ async function searchWithErrorHandling(value, options = {}) {
 // Example 10: Reusable search function
 async function searchFirestore(value, options = {}) {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -539,7 +543,7 @@ async function demonstrateReusableFunction() {
 // Example 11: Array field search
 async function arrayFieldSearch() {
   try {
-    const response = await fetch(SEARCH_URL, {
+    const response = await fetch(getSearchURL('users'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -570,7 +574,7 @@ async function testRateLimit() {
   
   for (let i = 1; i <= 65; i++) {
     try {
-      const response = await fetch(SEARCH_URL, {
+      const response = await fetch(getSearchURL('users'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,7 +2,7 @@
 # This extension provides configurable search functionality for Firestore collections
 
 name: firestore-search-extension
-version: 1.0.9
+version: 1.1.1
 specVersion: v1beta
 
 displayName: Firestore Search Extension
@@ -49,7 +49,8 @@ resources:
   - name: searchCollectionHttp
     type: firebaseextensions.v1beta.function
     description: >-
-      HTTP endpoint for searching the ${param:SEARCH_COLLECTION} collection with configurable parameters.
+      HTTP endpoint for searching Firestore collections with configurable parameters.
+      Supports dynamic collection selection via URL path (e.g., /searchCollectionHttp/products).
       Supports both GET and POST methods for REST API access, web applications, and server-to-server communication.
       Provides comprehensive search functionality with field filtering, case sensitivity options, and result limiting.
     properties:
@@ -172,16 +173,18 @@ params:
     default: "false"
     required: true
 
-  - param: SEARCH_COLLECTION
-    label: Search collection
+  - param: SEARCHABLE_COLLECTIONS
+    label: Searchable collections
     description: >-
-      The Firestore collection name that will be searched by this extension.
-      This collection must exist in your Firestore database.
+      Comma-separated list of Firestore collection names that can be searched by this extension.
+      Leave empty to allow searching all collections (less secure but more flexible).
+      When specified, only these collections will be accessible via the API.
+      Collections are accessed via URL path: /ext-firestore-search-extension-searchCollectionHttp/{collectionName}
     type: string
-    required: true
-    example: "products"
-    validationRegex: "^[a-zA-Z0-9_-]+$"
-    validationErrorMessage: Collection name must contain only alphanumeric characters, hyphens, and underscores
+    required: false
+    example: "products,users,orders,bookings"
+    validationRegex: "^$|^[a-zA-Z0-9_-]+(?:,[a-zA-Z0-9_-]+)*$"
+    validationErrorMessage: Must be empty or a comma-separated list of valid collection names (alphanumeric, hyphens, underscores)
 
   - param: SEARCHABLE_FIELDS
     label: Searchable fields
