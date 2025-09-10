@@ -43,6 +43,50 @@ The extension now supports dynamic collection selection via URL path:
 
 When you have multiple search extensions installed, each gets a unique instance ID in the URL.
 
+## 🌐 Custom Domain Support (Optional)
+
+You can use your own custom domain instead of the default Firebase Functions URL by setting up Firebase Hosting with URL rewrites. This provides a cleaner, branded API experience.
+
+### Setup Steps:
+
+1. **Configure Firebase Hosting** in your `firebase.json`:
+```json
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/search/**",
+        "function": "ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp"
+      }
+    ]
+  }
+}
+```
+
+2. **Add your custom domain** in the Firebase Console under Hosting → Add custom domain
+
+3. **Deploy your configuration**:
+```bash
+firebase deploy
+```
+
+### Custom Domain URLs:
+
+With a custom domain configured, your API endpoints become:
+- **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
+
+**Examples:**
+- Search products: `https://yourdomain.com/api/search/products`
+- Search users: `https://yourdomain.com/api/search/users`
+- Search orders: `https://yourdomain.com/api/search/orders`
+
+**Benefits:**
+- ✅ Branded URLs that match your domain
+- ✅ Automatic SSL certificates managed by Firebase
+- ✅ Same performance as default Firebase domains
+- ✅ Easy integration with existing Firebase projects
+
 ## 🚀 Performance Optimization
 
 ### Automatic Index Recommendations

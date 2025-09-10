@@ -46,10 +46,51 @@ During installation, you'll configure these parameters:
 
 ### HTTP Endpoint
 
-After installation, your search endpoint will be:
+After installation, your search endpoint will be available at:
+
+**Default Firebase Functions URL:**
 ```
-https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/{collectionName}
 ```
+
+**Custom Domain URL (Optional):**
+```
+https://yourdomain.com/api/search/{collectionName}
+```
+
+### 🌐 Custom Domain Support
+
+You can use your own custom domain instead of the default Firebase Functions URL by setting up Firebase Hosting with URL rewrites. This provides a cleaner, branded API experience.
+
+#### Setup Steps:
+
+1. **Configure Firebase Hosting** in your `firebase.json`:
+```json
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/search/**",
+        "function": "ext-firestore-search-extension-searchCollectionHttp"
+      }
+    ]
+  }
+}
+```
+
+2. **Add your custom domain** in the Firebase Console under Hosting → Add custom domain
+
+3. **Deploy your configuration**:
+```bash
+firebase deploy
+```
+
+#### Benefits:
+- ✅ Branded URLs that match your domain
+- ✅ Automatic SSL certificates managed by Firebase
+- ✅ Same performance as default Firebase domains
+- ✅ Easy integration with existing Firebase projects
 
 ### Supported Methods
 

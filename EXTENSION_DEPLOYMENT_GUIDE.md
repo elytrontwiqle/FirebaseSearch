@@ -278,8 +278,17 @@ Before deploying to production:
 
 - **Documentation**: Complete API reference in README.md
 - **Examples**: Working examples in `/examples` directory
+- **Custom Domain Setup**: See POSTINSTALL.md for Firebase Hosting integration
 - **Issues**: Report bugs on GitHub
 - **Updates**: Check CHANGELOG.md for version history
+
+## 🌐 New in v1.3.0: Custom Domain Support
+
+After deployment, users can optionally set up custom domains for branded API URLs:
+- Default: `https://region-project.cloudfunctions.net/ext-instance-searchCollectionHttp/{collection}`
+- Custom: `https://yourdomain.com/api/search/{collection}`
+
+See POSTINSTALL.md for complete setup instructions.
 
 ---
 

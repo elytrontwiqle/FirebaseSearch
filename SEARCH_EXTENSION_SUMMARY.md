@@ -25,6 +25,7 @@ A comprehensive Firebase Cloud Function that provides dedicated search functiona
 1. **HTTP Endpoint** (`searchCollectionHttp`): For REST API usage with GET/POST support
    - Simplified API with pre-configured collection and searchable fields
    - Enhanced security through configuration-time field locking
+   - **Custom Domain Support**: Optional Firebase Hosting integration for branded URLs
 
 ### ✅ Comprehensive Error Handling
 - **Input Validation**: Validates all parameters with descriptive error messages
@@ -43,6 +44,13 @@ A comprehensive Firebase Cloud Function that provides dedicated search functiona
 - Full CORS configuration for web applications
 - Preflight request handling
 - Configurable origins and methods
+
+### ✅ Custom Domain Support (New in v1.3.0)
+- **Firebase Hosting Integration**: Use your own domain instead of default Firebase Functions URLs
+- **Branded API Endpoints**: `https://yourdomain.com/api/search/{collectionName}`
+- **Automatic SSL**: Firebase-managed certificates for custom domains
+- **Easy Setup**: Three-step configuration process
+- **Backward Compatible**: Default Firebase Functions URLs continue to work
 
 ## Files Created
 

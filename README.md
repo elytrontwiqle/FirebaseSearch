@@ -78,10 +78,6 @@ You can use your own custom domain instead of the default Firebase Functions URL
       {
         "source": "/api/search/**",
         "function": "ext-firestore-search-extension-searchCollectionHttp"
-      },
-      {
-        "source": "/search/**",
-        "function": "ext-firestore-search-extension-searchCollectionHttp"
       }
     ]
   }
@@ -98,8 +94,7 @@ firebase deploy
 #### Custom Domain URLs:
 
 With a custom domain configured, your API endpoints become:
-- **Primary**: `https://yourdomain.com/api/search/{collectionName}`
-- **Alternative**: `https://yourdomain.com/search/{collectionName}`
+- **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
 
 **Examples:**
 - Search products: `https://yourdomain.com/api/search/products`

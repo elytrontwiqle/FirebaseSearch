@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **🌐 Custom Domain Support**: Enable custom domains for Firebase Functions via Firebase Hosting
   - Added Firebase Hosting configuration with URL rewrites in `firebase.json`
-  - Support for both `/api/search/**` and `/search/**` endpoint patterns
+  - Support for `/api/search/**` endpoint pattern
   - Automatic CORS headers configuration for API endpoints
   - Professional landing page with API documentation at domain root
 

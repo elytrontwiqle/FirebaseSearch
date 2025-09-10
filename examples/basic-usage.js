@@ -20,7 +20,12 @@
 
 // Base URL for your search extension (latest version)
 // Collection name is now specified in the URL path: {baseURL}/{collectionName}
+
+// Option 1: Default Firebase Functions URL
 const BASE_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp';
+
+// Option 2: Custom Domain URL (if you've set up Firebase Hosting with custom domain)
+// const BASE_URL = 'https://yourdomain.com/api/search';
 
 // Helper function to build collection-specific URL
 const getSearchURL = (collection) => `${BASE_URL}/${collection}`;
