@@ -5,6 +5,32 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-09-10
+
+### Added
+- **🌐 Custom Domain Support**: Enable custom domains for Firebase Functions via Firebase Hosting
+  - Added Firebase Hosting configuration with URL rewrites in `firebase.json`
+  - Support for both `/api/search/**` and `/search/**` endpoint patterns
+  - Automatic CORS headers configuration for API endpoints
+  - Professional landing page with API documentation at domain root
+
+### Features
+- **Branded API URLs**: Use your own domain instead of default Firebase Functions URLs
+  - Example: `https://yourdomain.com/api/search/products` instead of `https://us-central1-project.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products`
+- **Automatic SSL**: Firebase manages SSL certificates for custom domains
+- **Same Performance**: Custom domain routing maintains full Firebase Functions performance
+- **Easy Setup**: Simple three-step process to enable custom domains
+
+### Documentation
+- **Setup Guide**: Comprehensive custom domain setup instructions in README
+- **API Landing Page**: Professional documentation page served at custom domain root
+- **Usage Examples**: Updated examples showing both default and custom domain URLs
+
+### Technical Details
+- **URL Rewrites**: Firebase Hosting rewrites route custom domain requests to extension functions
+- **CORS Support**: Proper CORS headers for cross-origin API requests
+- **Backward Compatibility**: Default Firebase Functions URLs continue to work alongside custom domains
+
 ## [1.2.3] - 2025-01-28
 
 ### Added
