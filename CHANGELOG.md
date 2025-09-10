@@ -5,6 +5,27 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-09-10
+
+### Changed
+- **🎯 Simplified API Endpoints**: Streamlined custom domain support to use only `/api/search/**` pattern
+  - Removed alternative `/search/**` endpoint for cleaner, more consistent API structure
+  - Updated all documentation to reflect single endpoint pattern
+
+### Documentation
+- **📚 Comprehensive Documentation Updates**: Updated all documentation files for custom domain support
+  - Enhanced POSTINSTALL.md with complete Firebase Hosting integration guide
+  - Updated SEARCH_EXTENSION_README.md with custom domain examples and setup instructions
+  - Improved SEARCH_EXTENSION_SUMMARY.md with v1.3.0+ features overview
+  - Updated examples/basic-usage.js with custom domain URL options
+  - Enhanced EXTENSION_DEPLOYMENT_GUIDE.md with new feature information
+  - Ensured consistent documentation across all files
+
+### Technical Details
+- **Consistent API Structure**: All custom domain configurations now use `/api/search/**` pattern only
+- **Improved User Experience**: Cleaner documentation with step-by-step setup guides
+- **Better Examples**: Updated code examples to show both default and custom domain usage patterns
+
 ## [1.3.0] - 2025-09-10
 
 ### Added
