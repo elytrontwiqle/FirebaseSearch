@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Document-level field checking with detailed logs for first 3 documents
   - Field value logging to identify data structure issues
   - Match detection logging to trace search logic
+  
 - **🛡️ Bulletproof Fallback**: Automatic fallback search mechanism
   - If optimized query returns no results, automatically tries simple collection scan
   - Ensures search results are found even if query optimization fails

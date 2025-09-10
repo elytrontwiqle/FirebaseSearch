@@ -63,6 +63,55 @@ https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-exte
 
 **Note**: The collection name in the URL path determines which collection to search. Only collections configured during installation (or all collections if none specified) can be accessed.
 
+### 🌐 Custom Domain Support
+
+You can use your own custom domain instead of the default Firebase Functions URL by setting up Firebase Hosting with URL rewrites. This provides a cleaner, branded API experience.
+
+#### Setup Steps:
+
+1. **Configure Firebase Hosting** in your `firebase.json`:
+```json
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/search/**",
+        "function": "ext-firestore-search-extension-searchCollectionHttp"
+      },
+      {
+        "source": "/search/**",
+        "function": "ext-firestore-search-extension-searchCollectionHttp"
+      }
+    ]
+  }
+}
+```
+
+2. **Add your custom domain** in the Firebase Console under Hosting → Add custom domain
+
+3. **Deploy your configuration**:
+```bash
+firebase deploy
+```
+
+#### Custom Domain URLs:
+
+With a custom domain configured, your API endpoints become:
+- **Primary**: `https://yourdomain.com/api/search/{collectionName}`
+- **Alternative**: `https://yourdomain.com/search/{collectionName}`
+
+**Examples:**
+- Search products: `https://yourdomain.com/api/search/products`
+- Search users: `https://yourdomain.com/api/search/users`
+- Search orders: `https://yourdomain.com/api/search/orders`
+
+**Benefits:**
+- ✅ Branded URLs that match your domain
+- ✅ Automatic SSL certificates managed by Firebase
+- ✅ Same performance as default Firebase domains
+- ✅ Easy integration with existing Firebase projects
+
 ### Multiple Extension Instances
 
 When you install this extension multiple times for different collections, each instance gets its own unique endpoint based on the extension instance ID:
