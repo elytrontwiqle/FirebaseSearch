@@ -49,11 +49,25 @@ During installation, you'll configure these parameters:
 After installation, your search endpoint will be available at:
 
 **Default Firebase Functions URL:**
+
+*Versioned (Recommended):*
+```
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/{collectionName}
+```
+
+*Legacy (Backward Compatibility):*
 ```
 https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/{collectionName}
 ```
 
 **Custom Domain URL (Optional):**
+
+*Versioned (Recommended):*
+```
+https://yourdomain.com/api/search/v1/{collectionName}
+```
+
+*Legacy (Backward Compatibility):*
 ```
 https://yourdomain.com/api/search/{collectionName}
 ```
@@ -121,13 +135,15 @@ firebase deploy
       "field2": "value2"
     }
   ],
-  "meta": {
-    "totalResults": 10,
-    "searchCollection": "users",
-    "searchValue": "john",
-    "searchFields": ["name", "email"],
-    "returnFields": ["name", "email", "profileImage"]
-  }
+    "meta": {
+      "totalResults": 10,
+      "searchCollection": "users",
+      "searchValue": "john",
+      "searchFields": ["name", "email"],
+      "returnFields": ["name", "email", "profileImage"],
+      "version": "v1",
+      "isVersioned": true
+    }
 }
 ```
 
@@ -158,60 +174,87 @@ firebase deploy
 
 ### 1. POST Request (Recommended)
 
+**Versioned Endpoint:**
 ```bash
 curl -X POST \
-  "https://us-central1-your-project-id.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp" \
+  "https://us-central1-your-project-id.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/products" \
   -H 'Content-Type: application/json' \
   -d '{
     "searchValue": "laptop",
-    "returnFields": "title,price,imageUrl",
+    "limit": 20
+  }'
+```
+
+**Legacy Endpoint:**
+```bash
+curl -X POST \
+  "https://us-central1-your-project-id.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "searchValue": "laptop",
     "limit": 20
   }'
 ```
 
 ### 2. GET Request
 
+**Versioned Endpoint:**
 ```bash
-curl "https://us-central1-your-project-id.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp?searchValue=admin&returnFields=name,email&limit=5"
+curl "https://us-central1-your-project-id.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/users?searchValue=admin&limit=5"
+```
+
+**Legacy Endpoint:**
+```bash
+curl "https://us-central1-your-project-id.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/users?searchValue=admin&limit=5"
 ```
 
 ### 3. JavaScript/TypeScript Integration
 
 ```javascript
-const searchFirestore = async (value, options = {}) => {
-  const response = await fetch(
-    'https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        searchValue: value,
-        ...options
-      })
-    }
-  );
+// Helper functions for API versioning
+const getSearchURL = (collection, version = 'v1') => 
+  `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/${version}/${collection}`;
+
+const getLegacySearchURL = (collection) => 
+  `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/${collection}`;
+
+const searchFirestore = async (collection, value, options = {}, useVersioned = true) => {
+  const url = useVersioned ? getSearchURL(collection) : getLegacySearchURL(collection);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      searchValue: value,
+      ...options
+    })
+  });
   
   return await response.json();
 };
 
-// Usage examples (assuming extension is configured for specific collection and searchable fields)
+// Usage examples
+// Versioned endpoint (recommended)
 const userResults = await searchFirestore(
+  'users',
   'john',
   { 
-    returnFields: 'name,email,profileImage',
     limit: 10,
     caseSensitive: false 
-  }
+  },
+  true // Use versioned endpoint
 );
 
+// Legacy endpoint (backward compatibility)
 const productResults = await searchFirestore(
+  'products',
   'wireless headphones',
   { 
-    returnFields: 'title,price,description',
     limit: 25 
-  }
+  },
+  false // Use legacy endpoint
 );
 ```
 

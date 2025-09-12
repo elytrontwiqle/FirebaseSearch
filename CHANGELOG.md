@@ -5,6 +5,44 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-09-12
+
+### Added
+- **🔄 API Versioning**: Comprehensive API versioning system for future-proof development
+  - **Versioned Endpoints**: New `/v1/{collectionName}` URL format (recommended for new applications)
+  - **Legacy Support**: Backward compatibility with existing `/{collectionName}` format
+  - **Version Validation**: Automatic validation of API versions with detailed error messages
+  - **Response Metadata**: Version information included in all API responses (`version` and `isVersioned` fields)
+  - **Future-Ready**: Framework for introducing breaking changes in future versions (v2, v3, etc.)
+
+### Features
+- **Seamless Migration**: Existing applications continue to work without changes
+- **Gradual Adoption**: Developers can migrate to versioned endpoints at their own pace
+- **Clear API Evolution**: Explicit versioning makes API changes transparent and predictable
+- **Version-Specific Features**: Framework for version-specific functionality and configurations
+
+### Documentation
+- **Comprehensive Updates**: All documentation updated to reflect versioning system
+  - Updated README.md with versioning examples and migration guide
+  - Enhanced SEARCH_EXTENSION_README.md with version-specific usage patterns
+  - Improved POSTINSTALL.md with versioned endpoint examples
+  - Updated examples/basic-usage.js with versioning demonstration
+- **Migration Guide**: Clear guidance for adopting versioned endpoints
+- **Best Practices**: Recommendations for version selection and future-proofing
+
+### Technical Details
+- **URL Structure**: Support for both `/v1/{collection}` and `/{collection}` formats
+- **Version Detection**: Automatic parsing and validation of version information from URLs
+- **Error Handling**: New `UNSUPPORTED_VERSION` error code for invalid versions
+- **Backward Compatibility**: Zero breaking changes - all existing functionality preserved
+- **Response Format**: Enhanced metadata with version tracking
+
+### Benefits for Developers
+- **Future-Proof Applications**: Prepare for future API changes without disruption
+- **Controlled Migration**: Update applications on your timeline
+- **Clear Versioning**: Know exactly which API version you're using
+- **Stable Development**: Confidence in API stability and evolution path
+
 ## [1.3.1] - 2025-09-10
 
 ### Changed

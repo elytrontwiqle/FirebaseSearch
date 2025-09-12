@@ -22,18 +22,33 @@ The extension has created the following Cloud Function in your project:
 ## Function URL
 
 Your extension HTTP endpoint is available at:
+
+### Recommended: Versioned Endpoints (v1.4.0+)
+```
+https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v1/{collectionName}
+```
+
+### Legacy: Backward Compatibility
 ```
 https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/{collectionName}
 ```
 
 ### Dynamic Collection Selection
 
-The extension now supports dynamic collection selection via URL path:
+The extension supports dynamic collection selection via URL path:
+
+**Versioned Format (Recommended):**
+- **Format**: `{baseURL}/v1/{collectionName}`
+- **Examples**:
+  - Search products: `{baseURL}/v1/products`
+  - Search users: `{baseURL}/v1/users`
+  - Search orders: `{baseURL}/v1/orders`
+
+**Legacy Format (Backward Compatibility):**
 - **Format**: `{baseURL}/{collectionName}`
 - **Examples**:
   - Search products: `{baseURL}/products`
   - Search users: `{baseURL}/users`
-  - Search orders: `{baseURL}/orders`
 
 ### Collection Access Control
 
@@ -74,12 +89,17 @@ firebase deploy
 ### Custom Domain URLs:
 
 With a custom domain configured, your API endpoints become:
-- **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
 
-**Examples:**
+**Versioned (Recommended):**
+- **API Endpoint**: `https://yourdomain.com/api/search/v1/{collectionName}`
+- Search products: `https://yourdomain.com/api/search/v1/products`
+- Search users: `https://yourdomain.com/api/search/v1/users`
+- Search orders: `https://yourdomain.com/api/search/v1/orders`
+
+**Legacy (Backward Compatibility):**
+- **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
 - Search products: `https://yourdomain.com/api/search/products`
 - Search users: `https://yourdomain.com/api/search/users`
-- Search orders: `https://yourdomain.com/api/search/orders`
 
 **Benefits:**
 - ✅ Branded URLs that match your domain
@@ -149,6 +169,20 @@ Check your [Cloud Functions logs](https://console.firebase.google.com/project/${
 ### Basic HTTP Request Examples
 
 #### POST Request (Recommended)
+
+**Versioned Endpoint:**
+```bash
+curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v1/{collectionName}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searchValue": "laptop",
+    "limit": 20,
+    "sortBy": "price",
+    "direction": "desc"
+  }'
+```
+
+**Legacy Endpoint:**
 ```bash
 curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/{collectionName}" \
   -H "Content-Type: application/json" \
@@ -161,8 +195,15 @@ curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/e
 ```
 
 #### GET Request
+
+**Versioned Endpoint:**
 ```bash
-curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp?searchValue=admin&limit=5"
+curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v1/{collectionName}?searchValue=admin&limit=5"
+```
+
+**Legacy Endpoint:**
+```bash
+curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/{collectionName}?searchValue=admin&limit=5"
 ```
 
 ### JavaScript Integration
@@ -240,12 +281,14 @@ Your extension was configured with:
       "field2": "value2"
     }
   ],
-  "meta": {
-    "totalResults": 10,
-    "searchCollection": "users",
-    "searchValue": "john",
-    "searchFields": ["name", "email"]
-  }
+    "meta": {
+      "totalResults": 10,
+      "searchCollection": "users",
+      "searchValue": "john",
+      "searchFields": ["name", "email"],
+      "version": "v1",
+      "isVersioned": true
+    }
 }
 ```
 

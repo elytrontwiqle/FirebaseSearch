@@ -4,7 +4,8 @@ A powerful HTTP-based search extension for Firebase Firestore that provides dedi
 
 ## ✨ Features
 
-- **HTTP REST API**: Simple HTTP endpoints for easy integration with any application
+- **HTTP REST API**: Simple HTTP endpoints with API versioning for easy integration
+- **API Versioning**: Support for `/v1/` endpoints with backward compatibility
 - **Pre-configured Search**: Collection and searchable fields configured during installation
 - **Fuzzy Search**: Configurable typo tolerance for better UX (default: 1 typo per 4 characters)
 - **Result Sorting**: Sort results by any field with ascending/descending options
@@ -52,6 +53,18 @@ During installation, configure these parameters:
 ### HTTP Endpoint
 
 After installation, your search endpoint will be available at:
+
+#### Recommended: Versioned Endpoints (v1.4.0+)
+```
+https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/{collectionName}
+```
+
+**Examples:**
+- Search products: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/products`
+- Search users: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/users`
+- Search orders: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/orders`
+
+#### Legacy: Backward Compatibility
 ```
 https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/{collectionName}
 ```
@@ -59,9 +72,8 @@ https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-exte
 **Examples:**
 - Search products: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products`
 - Search users: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/users`
-- Search orders: `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/orders`
 
-**Note**: The collection name in the URL path determines which collection to search. Only collections configured during installation (or all collections if none specified) can be accessed.
+**Note**: The collection name in the URL path determines which collection to search. Only collections configured during installation (or all collections if none specified) can be accessed. Versioned endpoints are recommended for new applications.
 
 ### 🌐 Custom Domain Support
 
@@ -94,12 +106,17 @@ firebase deploy
 #### Custom Domain URLs:
 
 With a custom domain configured, your API endpoints become:
-- **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
 
-**Examples:**
+**Versioned (Recommended):**
+- **API Endpoint**: `https://yourdomain.com/api/search/v1/{collectionName}`
+- Search products: `https://yourdomain.com/api/search/v1/products`
+- Search users: `https://yourdomain.com/api/search/v1/users`
+- Search orders: `https://yourdomain.com/api/search/v1/orders`
+
+**Legacy (Backward Compatibility):**
+- **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
 - Search products: `https://yourdomain.com/api/search/products`
 - Search users: `https://yourdomain.com/api/search/users`
-- Search orders: `https://yourdomain.com/api/search/orders`
 
 **Benefits:**
 - ✅ Branded URLs that match your domain
@@ -145,6 +162,20 @@ Each instance can be configured to search a different collection, making it easy
 
 ### POST Request (JSON Body)
 
+**Versioned (Recommended):**
+```bash
+curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/users" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "searchValue": "john",
+    "limit": 10,
+    "caseSensitive": false,
+    "sortBy": "name",
+    "direction": "asc"
+  }'
+```
+
+**Legacy (Backward Compatibility):**
 ```bash
 curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/users" \
   -H "Content-Type: application/json" \
@@ -159,6 +190,12 @@ curl -X POST "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firesto
 
 ### GET Request (Query Parameters)
 
+**Versioned (Recommended):**
+```bash
+curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/v1/products?searchValue=laptop&limit=20&sortBy=price&direction=desc"
+```
+
+**Legacy (Backward Compatibility):**
 ```bash
 curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products?searchValue=laptop&limit=20&sortBy=price&direction=desc"
 ```
@@ -166,8 +203,18 @@ curl "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-searc
 ### JavaScript/TypeScript Example
 
 ```javascript
-const searchFirestore = async (value, options = {}) => {
-  const response = await fetch('https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/products', {
+// Helper function for versioned endpoints (recommended)
+const getSearchURL = (collection, version = 'v1') => 
+  `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/${version}/${collection}`;
+
+// Helper function for legacy endpoints (backward compatibility)
+const getLegacySearchURL = (collection) => 
+  `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp/${collection}`;
+
+const searchFirestore = async (collection, value, options = {}, useVersioned = true) => {
+  const url = useVersioned ? getSearchURL(collection) : getLegacySearchURL(collection);
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -181,15 +228,31 @@ const searchFirestore = async (value, options = {}) => {
   return await response.json();
 };
 
-// Usage (assuming extension is configured for 'articles' collection with 'title,content,tags' as searchable fields)
+// Usage examples
+// Versioned endpoint (recommended)
 const results = await searchFirestore(
+  'articles',
   'firebase',
   { 
     limit: 15,
     caseSensitive: false,
     sortBy: 'publishedAt',
     direction: 'desc'
-  }
+  },
+  true // Use versioned endpoint
+);
+
+// Legacy endpoint (backward compatibility)
+const legacyResults = await searchFirestore(
+  'articles',
+  'firebase',
+  { 
+    limit: 15,
+    caseSensitive: false,
+    sortBy: 'publishedAt',
+    direction: 'desc'
+  },
+  false // Use legacy endpoint
 );
 ```
 
@@ -250,24 +313,26 @@ const useFirestoreSearch = (searchTerm, options = {}) => {
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": "doc1",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "profile": {
-        "bio": "Software developer"
+      "data": [
+        {
+          "id": "doc1",
+          "name": "John Doe",
+          "email": "john@example.com",
+          "profile": {
+            "bio": "Software developer"
+          }
+        }
+      ],
+      "meta": {
+        "totalResults": 1,
+        "searchCollection": "users",
+        "searchValue": "john",
+        "searchFields": ["name", "email", "profile.bio"],
+        "sortBy": "name",
+        "direction": "asc",
+        "version": "v1",
+        "isVersioned": true
       }
-    }
-  ],
-  "meta": {
-    "totalResults": 1,
-    "searchCollection": "users",
-    "searchValue": "john",
-    "searchFields": ["name", "email", "profile.bio"],
-    "sortBy": "name",
-    "direction": "asc"
-  }
 }
 ```
 
@@ -283,6 +348,56 @@ const useFirestoreSearch = (searchTerm, options = {}) => {
   }
 }
 ```
+
+## 🔄 API Versioning
+
+The extension supports API versioning to accommodate future breaking changes while maintaining backward compatibility.
+
+### Supported Versions
+
+- **v1**: Current stable API version (recommended for new applications)
+- **legacy**: Backward compatibility for existing applications
+
+### Version Selection
+
+**Versioned Endpoints (Recommended):**
+```
+/v1/{collectionName}
+```
+
+**Legacy Endpoints (Backward Compatibility):**
+```
+/{collectionName}
+```
+
+### Version Information in Response
+
+All API responses include version metadata:
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "meta": {
+    "version": "v1",
+    "isVersioned": true,
+    ...
+  }
+}
+```
+
+### Migration Strategy
+
+1. **New Applications**: Use versioned endpoints (`/v1/`) from the start
+2. **Existing Applications**: Continue using legacy endpoints, migrate when convenient
+3. **Future Versions**: New versions (e.g., `v2`) will be introduced for breaking changes
+
+### Benefits
+
+- **Future-Proof**: Accommodate breaking changes without disrupting existing applications
+- **Gradual Migration**: Update applications at your own pace
+- **Clear API Evolution**: Explicit versioning makes API changes transparent
+- **Backward Compatibility**: Legacy endpoints remain functional indefinitely
 
 ## 🔍 Advanced Features
 

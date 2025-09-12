@@ -18,8 +18,8 @@
  * You only need to provide the searchValue and optional parameters like returnFields, limit, etc.
  */
 
-// Base URL for your search extension (latest version)
-// Collection name is now specified in the URL path: {baseURL}/{collectionName}
+// Base URL for your search extension
+// Collection name is specified in the URL path with optional versioning
 
 // Option 1: Default Firebase Functions URL
 const BASE_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-firestore-search-extension-searchCollectionHttp';
@@ -27,10 +27,63 @@ const BASE_URL = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/ext-fir
 // Option 2: Custom Domain URL (if you've set up Firebase Hosting with custom domain)
 // const BASE_URL = 'https://yourdomain.com/api/search';
 
-// Helper function to build collection-specific URL
-const getSearchURL = (collection) => `${BASE_URL}/${collection}`;
+// Helper functions to build collection-specific URLs
+// Recommended: Use versioned endpoints for new applications
+const getSearchURL = (collection, version = 'v1') => `${BASE_URL}/${version}/${collection}`;
 
-// Example 1: Basic search functionality with specific return fields
+// Legacy: For backward compatibility (existing applications)
+const getLegacySearchURL = (collection) => `${BASE_URL}/${collection}`;
+
+// Example 0: API Versioning demonstration
+async function versioningDemo() {
+  try {
+    console.log('=== API Versioning Demo ===');
+    
+    // Recommended: Use v1 versioned endpoint (default)
+    console.log('\n1. Using v1 versioned endpoint (recommended):');
+    const v1Response = await fetch(getSearchURL('users', 'v1'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchValue: 'john',
+        limit: 3
+      })
+    });
+    
+    const v1Result = await v1Response.json();
+    if (v1Result.success) {
+      console.log(`✅ v1 API: Found ${v1Result.meta.totalResults} results`);
+      console.log(`   Version: ${v1Result.meta.version}, Versioned: ${v1Result.meta.isVersioned}`);
+    }
+    
+    // Legacy: Use legacy endpoint for backward compatibility
+    console.log('\n2. Using legacy endpoint (backward compatibility):');
+    const legacyResponse = await fetch(getLegacySearchURL('users'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchValue: 'john',
+        limit: 3
+      })
+    });
+    
+    const legacyResult = await legacyResponse.json();
+    if (legacyResult.success) {
+      console.log(`✅ Legacy API: Found ${legacyResult.meta.totalResults} results`);
+      console.log(`   Version: ${legacyResult.meta.version}, Versioned: ${legacyResult.meta.isVersioned}`);
+    }
+    
+    // Show the difference in response metadata
+    console.log('\n3. Response metadata comparison:');
+    console.log('v1 metadata:', JSON.stringify(v1Result.meta, null, 2));
+    console.log('Legacy metadata:', JSON.stringify(legacyResult.meta, null, 2));
+    
+  } catch (error) {
+    console.error('Versioning demo failed:', error.message);
+  }
+}
+
+// Example 1: Basic search functionality with specific return fields (using v1)
 async function basicSearch() {
   try {
     const response = await fetch(getSearchURL('users'), {
@@ -614,6 +667,7 @@ async function testRateLimit() {
 // Export functions for use in other files or testing
 if (typeof module !== 'undefined' && module.exports) {
 module.exports = {
+    versioningDemo,
     basicSearch,
     searchWithDefaultFields,
     fuzzySearchDemo,
@@ -638,6 +692,7 @@ if (typeof window === 'undefined' && require.main === module) {
   console.log('Running Firestore Search Extension examples...\n');
   
   // Uncomment the examples you want to test
+  // versioningDemo(); // Demonstrates API versioning (v1 vs legacy)
   // basicSearch();
   // searchWithReturnFields();
   // caseSensitiveSearch();

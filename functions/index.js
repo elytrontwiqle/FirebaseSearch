@@ -36,9 +36,12 @@ const config = {
 const rateLimitStore = new Map();
 
 /**
- * Extract collection name from URL path
- * Firebase Functions URL format: /ext-{instanceId}-searchCollectionHttp/{collectionName}
- * Full URL: https://region-project.cloudfunctions.net/ext-{instanceId}-searchCollectionHttp/{collectionName}
+ * Extract collection name and version from URL path
+ * Supported formats:
+ * - Versioned: /v1/{collectionName} (recommended)
+ * - Legacy: /{collectionName} (for backward compatibility)
+ * Firebase Functions URL format: /ext-{instanceId}-searchCollectionHttp/v1/{collectionName}
+ * Full URL: https://region-project.cloudfunctions.net/ext-{instanceId}-searchCollectionHttp/v1/{collectionName}
  */
 function extractCollectionFromPath(request) {
   const path = request.path || request.url;
@@ -54,31 +57,101 @@ function extractCollectionFromPath(request) {
   // The function name is handled by Firebase routing, so we get the remaining path
   // If path is just "/" or empty, no collection specified
   if (pathParts.length === 0) {
-    return null;
+    return { collectionName: null, version: null, isVersioned: false };
   }
   
-  // The first path part should be the collection name
-  // Handle cases where the path might have the function name included
   let collectionName = null;
+  let version = null;
+  let isVersioned = false;
   
   // Check if the path contains the function name (for local testing or direct calls)
   const functionNameIndex = pathParts.findIndex(part => 
     part.includes('searchCollectionHttp')
   );
   
+  let startIndex = 0;
   if (functionNameIndex >= 0) {
-    // Function name found in path, collection is the next part
-    if (pathParts.length > functionNameIndex + 1) {
-      collectionName = pathParts[functionNameIndex + 1];
-    }
-  } else {
-    // Function name not in path (normal Firebase Functions routing)
-    // First path part should be the collection name
-    collectionName = pathParts[0];
+    // Function name found in path, start after the function name
+    startIndex = functionNameIndex + 1;
   }
   
-  console.log('Debug - Extracted collection:', collectionName); // Debug logging
-  return collectionName;
+  // Check for versioned path format: /v1/{collectionName}
+  if (pathParts.length > startIndex && pathParts[startIndex].match(/^v\d+$/)) {
+    version = pathParts[startIndex];
+    isVersioned = true;
+    
+    // Collection name should be the next part
+    if (pathParts.length > startIndex + 1) {
+      collectionName = pathParts[startIndex + 1];
+    }
+  } else {
+    // Legacy format: /{collectionName} (no version specified)
+    if (pathParts.length > startIndex) {
+      collectionName = pathParts[startIndex];
+      version = 'legacy';
+      isVersioned = false;
+    }
+  }
+  
+  console.log('Debug - Extracted collection:', collectionName, 'version:', version, 'isVersioned:', isVersioned);
+  return { collectionName, version, isVersioned };
+}
+
+/**
+ * Validate API version and return version-specific configuration
+ */
+function validateApiVersion(version, isVersioned) {
+  const supportedVersions = ['v1', 'legacy'];
+  
+  // If no version specified, default to legacy for backward compatibility
+  if (!version || version === 'legacy') {
+    return {
+      valid: true,
+      version: 'legacy',
+      isVersioned: false,
+      features: {
+        // Legacy features - maintain backward compatibility
+        supportsFuzzySearch: true,
+        supportsNestedFields: true,
+        supportsRateLimit: true,
+        maxSearchLimit: config.maxSearchLimit
+      }
+    };
+  }
+  
+  // Check if version is supported
+  if (!supportedVersions.includes(version)) {
+    return {
+      valid: false,
+      error: `Unsupported API version: ${version}. Supported versions: ${supportedVersions.join(', ')}`
+    };
+  }
+  
+  // Version-specific configurations
+  switch (version) {
+    case 'v1':
+      return {
+        valid: true,
+        version: 'v1',
+        isVersioned: true,
+        features: {
+          // v1 features - current stable API
+          supportsFuzzySearch: true,
+          supportsNestedFields: true,
+          supportsRateLimit: true,
+          maxSearchLimit: config.maxSearchLimit,
+          // Future: Add new features here for v1
+          supportsAdvancedSorting: true,
+          supportsFieldFiltering: true
+        }
+      };
+    
+    default:
+      return {
+        valid: false,
+        error: `Version ${version} is not implemented`
+      };
+  }
 }
 
 /**
@@ -89,7 +162,7 @@ async function validateCollectionAccess(collectionName) {
   if (!collectionName || typeof collectionName !== 'string') {
     return {
       valid: false,
-      error: 'Collection name is required in URL path (e.g., /searchCollectionHttp/products)'
+      error: 'Collection name is required in URL path (e.g., /v1/products or /products for legacy)'
     };
   }
 
@@ -404,8 +477,23 @@ exports.searchCollectionHttp = onRequest({
       direction = 'asc'
     } = params;
 
-    // Extract collection from URL path
-    const searchCollection = extractCollectionFromPath(request);
+    // Extract collection and version from URL path
+    const pathInfo = extractCollectionFromPath(request);
+    const { collectionName: searchCollection, version, isVersioned } = pathInfo;
+    
+    // Validate API version
+    const versionValidation = validateApiVersion(version, isVersioned);
+    if (!versionValidation.valid) {
+      response.status(400).json({
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_VERSION',
+          message: versionValidation.error,
+          timestamp: new Date().toISOString()
+        }
+      });
+      return;
+    }
     
     // Validate collection access
     const collectionValidation = await validateCollectionAccess(searchCollection);
@@ -475,7 +563,9 @@ exports.searchCollectionHttp = onRequest({
         searchFields,
         returnFields: returnFieldsList,
         sortBy: sortBy || null,
-        direction: direction || null
+        direction: direction || null,
+        version: version || 'legacy',
+        isVersioned: isVersioned
       }
     });
 
@@ -1038,3 +1128,17 @@ exports.onConfigureHandler = onTaskDispatched({
     throw error;
   }
 });
+
+// Export helper functions for testing
+if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+  module.exports = {
+    ...module.exports,
+    extractCollectionFromPath,
+    validateApiVersion,
+    validateCollectionAccess,
+    getClientIP,
+    checkRateLimit,
+    fuzzyMatch,
+    levenshteinDistance
+  };
+}
