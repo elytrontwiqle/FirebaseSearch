@@ -12,6 +12,7 @@
  * - Data transformation (timestamps → ISO strings, references → paths)
  * - Case sensitivity options
  * - Nested field support
+ * - JWT authentication support (see jwt-authentication-example.js for details)
  * 
  * NOTE: Searchable collections and fields are configured during extension installation.
  * Collection name is specified in the URL path. Only configured collections (or all if none specified) can be accessed.

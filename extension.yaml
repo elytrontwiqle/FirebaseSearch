@@ -2,17 +2,18 @@
 # This extension provides configurable search functionality for Firestore collections
 
 name: firestore-search-extension
-version: 1.4.0
+version: 2.0.0
 specVersion: v1beta
 
 displayName: Firestore Search Extension
 description: >-
   Provides HTTP-based search functionality for Firestore collections with 
   intelligent fuzzy search, automatic data transformation, and advanced filtering options.
-  Features include API versioning (/v1/ endpoints), typo tolerance (1 per 4 characters), 
-  clean JSON output with converted timestamps and references, configurable rate limiting, 
-  and enhanced security. Access via versioned REST API endpoints for server-to-server 
-  or web application integration with backward compatibility support.
+  Features include API versioning (/v1/, /v2/ endpoints), JWT authentication for secure access,
+  typo tolerance (1 per 4 characters), clean JSON output with converted timestamps and references, 
+  configurable rate limiting, and enhanced security. The new v2 API offers improved performance, 
+  richer metadata, and enhanced user context. Access via versioned REST API endpoints for 
+  server-to-server or web application integration with full backward compatibility.
   
   💝 Support: If you find this extension useful, consider supporting its development at https://pay.yoco.com/twiqle
 
@@ -264,6 +265,22 @@ params:
     required: false
     validationRegex: "^[1-9][0-9]*$"
     validationErrorMessage: Must be a positive integer (minimum 1)
+
+  - param: REQUIRE_JWT_AUTHENTICATION
+    label: Require JWT Authentication
+    description: >-
+      Enable JWT token validation for API requests. When enabled, all requests must include 
+      a valid Firebase ID token in the Authorization header (Bearer token format).
+      When disabled, the API works without authentication (current behavior).
+      This provides secure access control while maintaining backward compatibility.
+    type: select
+    options:
+      - label: No (Public API - no authentication required)
+        value: "false"
+      - label: Yes (Secure API - JWT token required)
+        value: "true"
+    default: "false"
+    required: true
 
 
 

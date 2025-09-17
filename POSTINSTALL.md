@@ -14,6 +14,7 @@ The extension has created the following Cloud Function in your project:
 
 ### Key Features Enabled
 - **🔍 Fuzzy Search**: Configurable typo tolerance for better user experience
+- **🔐 JWT Authentication**: Optional Firebase ID token validation for secure API access
 - **🔄 Data Transformation**: Automatic conversion of Firestore timestamps and references to clean JSON
 - **🛡️ Rate Limiting**: Per-origin request limiting to prevent abuse
 - **🔐 Security**: Pre-configured collection and searchable fields for enhanced security
@@ -23,9 +24,9 @@ The extension has created the following Cloud Function in your project:
 
 Your extension HTTP endpoint is available at:
 
-### Recommended: Versioned Endpoints (v1.4.0+)
+### Enhanced: v2 API Endpoints (JWT Authentication & Advanced Features)
 ```
-https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v1/{collectionName}
+https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v2/{collectionName}
 ```
 
 ### Legacy: Backward Compatibility
@@ -37,12 +38,12 @@ https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT
 
 The extension supports dynamic collection selection via URL path:
 
-**Versioned Format (Recommended):**
-- **Format**: `{baseURL}/v1/{collectionName}`
+**v2 API Format (Enhanced Features):**
+- **Format**: `{baseURL}/v2/{collectionName}`
 - **Examples**:
-  - Search products: `{baseURL}/v1/products`
-  - Search users: `{baseURL}/v1/users`
-  - Search orders: `{baseURL}/v1/orders`
+  - Search products: `{baseURL}/v2/products`
+  - Search users: `{baseURL}/v2/users`
+  - Search orders: `{baseURL}/v2/orders`
 
 **Legacy Format (Backward Compatibility):**
 - **Format**: `{baseURL}/{collectionName}`
@@ -90,11 +91,11 @@ firebase deploy
 
 With a custom domain configured, your API endpoints become:
 
-**Versioned (Recommended):**
-- **API Endpoint**: `https://yourdomain.com/api/search/v1/{collectionName}`
-- Search products: `https://yourdomain.com/api/search/v1/products`
-- Search users: `https://yourdomain.com/api/search/v1/users`
-- Search orders: `https://yourdomain.com/api/search/v1/orders`
+**v2 API (Enhanced Features):**
+- **API Endpoint**: `https://yourdomain.com/api/search/v2/{collectionName}`
+- Search products: `https://yourdomain.com/api/search/v2/products`
+- Search users: `https://yourdomain.com/api/search/v2/users`
+- Search orders: `https://yourdomain.com/api/search/v2/orders`
 
 **Legacy (Backward Compatibility):**
 - **API Endpoint**: `https://yourdomain.com/api/search/{collectionName}`
@@ -172,7 +173,7 @@ Check your [Cloud Functions logs](https://console.firebase.google.com/project/${
 
 **Versioned Endpoint:**
 ```bash
-curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v1/{collectionName}" \
+curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v2/{collectionName}" \
   -H "Content-Type: application/json" \
   -d '{
     "searchValue": "laptop",
@@ -198,7 +199,8 @@ curl -X POST "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/e
 
 **Versioned Endpoint:**
 ```bash
-curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v1/{collectionName}?searchValue=admin&limit=5"
+curl "https://${param:LOCATION}-${param:PROJECT_ID}.cloudfunctions.net/ext-${param:EXT_INSTANCE_ID}-searchCollectionHttp/v2/{collectionName}?searchValue=admin&limit=5" \
+  -H "Authorization: Bearer YOUR_FIREBASE_ID_TOKEN"
 ```
 
 **Legacy Endpoint:**
@@ -243,6 +245,7 @@ console.log('Search results:', results.data);
 ## Configuration Summary
 
 Your extension was configured with:
+- **JWT Authentication**: ${param:REQUIRE_JWT_AUTHENTICATION}
 - **Searchable Collections**: ${param:SEARCHABLE_COLLECTIONS} (empty = all collections allowed)
 - **Searchable Fields**: ${param:SEARCHABLE_FIELDS}
 - **Default Return Fields**: ${param:DEFAULT_RETURN_FIELDS} (empty = return all fields)
@@ -445,6 +448,122 @@ HTTP 429 response with retry information:
   }
 }
 ```
+
+## 🔐 JWT Authentication Setup
+
+If you enabled JWT authentication (`REQUIRE_JWT_AUTHENTICATION = "true"`), all API requests must include a valid Firebase ID token in the Authorization header.
+
+### Setting Up Authentication
+
+1. **Enable Firebase Authentication** in your project (if not already enabled)
+2. **Configure sign-in methods** (email/password, Google, etc.)
+3. **Get Firebase ID tokens** from authenticated users
+
+### Making Authenticated Requests
+
+#### JavaScript/Web Applications
+```javascript
+// Get Firebase ID token from authenticated user
+const user = firebase.auth().currentUser;
+if (user) {
+  const idToken = await user.getIdToken();
+  
+  // Make authenticated search request
+  const response = await fetch('YOUR_ENDPOINT_URL/v2/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`
+    },
+    body: JSON.stringify({
+      searchValue: 'laptop',
+      limit: 10
+    })
+  });
+  
+  const result = await response.json();
+  if (result.success) {
+    console.log('Results:', result.data);
+    console.log('User info:', result.meta.user); // Authenticated user details
+  }
+}
+```
+
+#### cURL Example
+```bash
+curl -X POST "YOUR_ENDPOINT_URL/v2/products" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_FIREBASE_ID_TOKEN" \
+  -d '{"searchValue": "laptop", "limit": 10}'
+```
+
+### Authentication Error Handling
+
+When authentication fails, you'll receive a 401 status with specific error codes:
+
+- **`NO_TOKEN`**: Missing Authorization header
+- **`TOKEN_EXPIRED`**: Token has expired (refresh needed)
+- **`TOKEN_REVOKED`**: Token has been revoked
+- **`INVALID_TOKEN`**: Invalid token format or signature
+
+```javascript
+if (response.status === 401) {
+  const error = await response.json();
+  switch (error.error.code) {
+    case 'NO_TOKEN':
+      // Redirect to login
+      break;
+    case 'TOKEN_EXPIRED':
+      // Refresh token and retry
+      const newToken = await user.getIdToken(true);
+      // Retry request with new token
+      break;
+  }
+}
+```
+
+### Security Benefits
+
+- **User Context**: Know which user made each request
+- **Access Control**: Foundation for user-specific permissions
+- **Audit Trail**: Track API usage by authenticated users
+- **Data Protection**: Secure sensitive collections from unauthorized access
+
+### 🔒 Security Implementation
+
+The extension uses enterprise-grade security for JWT token validation:
+
+**Cryptographic Validation:**
+- Uses Firebase Admin SDK's `verifyIdToken()` method
+- Validates RSA256 token signatures using Firebase public keys
+- Checks token expiration, issuer, and audience automatically
+- Supports token revocation detection
+
+**Security Features:**
+- ✅ **Stateless Validation**: No server-side token storage
+- ✅ **Automatic Expiration**: Tokens expire after 1 hour
+- ✅ **Project Isolation**: Tokens only valid for your Firebase project
+- ✅ **Audit Logging**: All authentication attempts logged
+- ✅ **Error Masking**: Generic error messages prevent information leakage
+
+**Token Parsing:**
+```javascript
+// Secure extraction from Authorization header
+const authHeader = request.headers.authorization || request.headers.Authorization;
+const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+
+// Firebase Admin validation
+const decodedToken = await admin.auth().verifyIdToken(token);
+```
+
+**Best Practices Enforced:**
+- Case-insensitive header parsing
+- Regex validation of Bearer format
+- Immediate token validation and disposal
+- Comprehensive error handling
+- HTTPS-only transmission required
+
+**Note**: See `examples/jwt-authentication-example.js` for comprehensive authentication examples and security best practices.
 
 ## Performance Tips
 

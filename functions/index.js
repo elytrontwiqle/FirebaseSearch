@@ -28,7 +28,8 @@ const config = {
   defaultReturnFields: process.env.DEFAULT_RETURN_FIELDS ? 
     process.env.DEFAULT_RETURN_FIELDS.split(',').map(f => f.trim()) : [],
   enableFuzzySearch: process.env.ENABLE_FUZZY_SEARCH === 'true',
-  fuzzySearchTypoTolerance: parseInt(process.env.FUZZY_SEARCH_TYPO_TOLERANCE) || 4
+  fuzzySearchTypoTolerance: parseInt(process.env.FUZZY_SEARCH_TYPO_TOLERANCE) || 4,
+  requireJwtAuthentication: process.env.REQUIRE_JWT_AUTHENTICATION === 'true'
 };
 
 // In-memory rate limiting storage
@@ -101,7 +102,7 @@ function extractCollectionFromPath(request) {
  * Validate API version and return version-specific configuration
  */
 function validateApiVersion(version, isVersioned) {
-  const supportedVersions = ['v1', 'legacy'];
+  const supportedVersions = ['v2', 'legacy'];
   
   // If no version specified, default to legacy for backward compatibility
   if (!version || version === 'legacy') {
@@ -114,6 +115,7 @@ function validateApiVersion(version, isVersioned) {
         supportsFuzzySearch: true,
         supportsNestedFields: true,
         supportsRateLimit: true,
+        supportsJwtAuthentication: false, // JWT not available in legacy
         maxSearchLimit: config.maxSearchLimit
       }
     };
@@ -129,20 +131,23 @@ function validateApiVersion(version, isVersioned) {
   
   // Version-specific configurations
   switch (version) {
-    case 'v1':
+    case 'v2':
       return {
         valid: true,
-        version: 'v1',
+        version: 'v2',
         isVersioned: true,
         features: {
-          // v1 features - current stable API
+          // v2 features - enhanced API with JWT authentication and improved performance
           supportsFuzzySearch: true,
           supportsNestedFields: true,
           supportsRateLimit: true,
-          maxSearchLimit: config.maxSearchLimit,
-          // Future: Add new features here for v1
+          supportsJwtAuthentication: true, // JWT authentication - v2 exclusive feature
           supportsAdvancedSorting: true,
-          supportsFieldFiltering: true
+          supportsFieldFiltering: true,
+          supportsUserContext: true, // New: User-specific features
+          supportsEnhancedMetadata: true, // New: Richer response metadata
+          supportsPerformanceOptimizations: true, // New: Better query optimization
+          maxSearchLimit: config.maxSearchLimit
         }
       };
     
@@ -288,6 +293,81 @@ function cleanupRateLimitStore() {
 }
 
 /**
+ * Extract JWT token from Authorization header
+ */
+function extractJwtToken(request) {
+  const authHeader = request.headers.authorization || request.headers.Authorization;
+  
+  if (!authHeader) {
+    return null;
+  }
+  
+  // Check for Bearer token format
+  const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (bearerMatch) {
+    return bearerMatch[1];
+  }
+  
+  return null;
+}
+
+/**
+ * Validate JWT token using Firebase Admin Auth
+ */
+async function validateJwtToken(token) {
+  if (!token) {
+    return {
+      valid: false,
+      error: 'No authentication token provided',
+      code: 'NO_TOKEN'
+    };
+  }
+  
+  try {
+    const auth = getAuth();
+    const decodedToken = await auth.verifyIdToken(token);
+    
+    return {
+      valid: true,
+      user: {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        emailVerified: decodedToken.email_verified,
+        customClaims: decodedToken.custom_claims || {}
+      },
+      token: decodedToken
+    };
+  } catch (error) {
+    console.error('JWT validation error:', error);
+    
+    // Determine specific error type
+    let errorCode = 'INVALID_TOKEN';
+    let errorMessage = 'Invalid authentication token';
+    
+    if (error.code === 'auth/id-token-expired') {
+      errorCode = 'TOKEN_EXPIRED';
+      errorMessage = 'Authentication token has expired';
+    } else if (error.code === 'auth/id-token-revoked') {
+      errorCode = 'TOKEN_REVOKED';
+      errorMessage = 'Authentication token has been revoked';
+    } else if (error.code === 'auth/invalid-id-token') {
+      errorCode = 'INVALID_TOKEN';
+      errorMessage = 'Invalid authentication token format';
+    } else if (error.code === 'auth/project-not-found') {
+      errorCode = 'PROJECT_ERROR';
+      errorMessage = 'Firebase project configuration error';
+    }
+    
+    return {
+      valid: false,
+      error: errorMessage,
+      code: errorCode,
+      details: error.message
+    };
+  }
+}
+
+/**
  * Calculate Levenshtein distance between two strings
  * Used for fuzzy matching with typo tolerance
  */
@@ -412,7 +492,7 @@ exports.searchCollectionHttp = onRequest({
     // Set CORS headers
     response.set('Access-Control-Allow-Origin', '*');
     response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.set('Access-Control-Allow-Headers', 'Content-Type');
+    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     // Handle preflight requests
     if (request.method === 'OPTIONS') {
@@ -452,6 +532,29 @@ exports.searchCollectionHttp = onRequest({
         }
       });
       return;
+    }
+
+    // JWT Authentication validation (if enabled)
+    let authenticatedUser = null;
+    if (config.requireJwtAuthentication) {
+      const token = extractJwtToken(request);
+      const jwtValidation = await validateJwtToken(token);
+      
+      if (!jwtValidation.valid) {
+        response.status(401).json({
+          success: false,
+          error: {
+            code: jwtValidation.code,
+            message: jwtValidation.error,
+            details: jwtValidation.details || 'Authentication required. Please provide a valid Firebase ID token in the Authorization header.',
+            timestamp: new Date().toISOString()
+          }
+        });
+        return;
+      }
+      
+      authenticatedUser = jwtValidation.user;
+      console.log(`Authenticated request from user: ${authenticatedUser.uid} (${authenticatedUser.email})`);
     }
 
     // Only allow GET and POST methods
@@ -553,20 +656,48 @@ exports.searchCollectionHttp = onRequest({
 
 
 
+    // Build response metadata based on API version
+    const baseMeta = {
+      totalResults: results.length,
+      searchCollection,
+      searchValue,
+      searchFields,
+      returnFields: returnFieldsList,
+      sortBy: sortBy || null,
+      direction: direction || null,
+      version: version || 'legacy',
+      isVersioned: isVersioned,
+      authenticated: config.requireJwtAuthentication,
+      user: authenticatedUser ? {
+        uid: authenticatedUser.uid,
+        email: authenticatedUser.email,
+        emailVerified: authenticatedUser.emailVerified
+      } : null
+    };
+
+    // Enhanced metadata for v2 API
+    if (version === 'v2') {
+      baseMeta.apiVersion = 'v2';
+      baseMeta.features = versionValidation.features;
+      baseMeta.performance = {
+        searchOptimized: true,
+        fuzzySearchEnabled: config.enableFuzzySearch,
+        rateLimitingEnabled: config.rateLimitRequestsPerMinute > 0
+      };
+      baseMeta.security = {
+        jwtAuthenticationEnabled: config.requireJwtAuthentication,
+        collectionRestricted: config.searchableCollections.length > 0,
+        fieldRestricted: config.searchableFields.length > 0
+      };
+      if (authenticatedUser) {
+        baseMeta.user.customClaims = authenticatedUser.customClaims;
+      }
+    }
+
     response.status(200).json({
       success: true,
       data: results,
-      meta: {
-        totalResults: results.length,
-        searchCollection,
-        searchValue,
-        searchFields,
-        returnFields: returnFieldsList,
-        sortBy: sortBy || null,
-        direction: direction || null,
-        version: version || 'legacy',
-        isVersioned: isVersioned
-      }
+      meta: baseMeta
     });
 
   } catch (error) {
@@ -1139,6 +1270,8 @@ if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
     getClientIP,
     checkRateLimit,
     fuzzyMatch,
-    levenshteinDistance
+    levenshteinDistance,
+    extractJwtToken,
+    validateJwtToken
   };
 }

@@ -5,6 +5,116 @@ All notable changes to the Firestore Search Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-09-17
+
+### 🚀 Major Release - API v2 with Enhanced Features
+
+This is a major version release introducing the new v2 API with significant enhancements while maintaining full backward compatibility.
+
+### Added
+- **🆕 API v2**: New `/v2/{collectionName}` endpoints with enhanced features
+  - **Enhanced Metadata**: Richer response metadata with performance and security information
+  - **User Context**: Expanded user information including custom claims
+  - **Feature Detection**: API capabilities exposed in response metadata
+  - **Performance Metrics**: Search optimization status and configuration details
+  - **Security Context**: Authentication and access control information
+
+### API Version Support
+- **v2 (New)**: Enhanced API with JWT authentication, improved metadata and user context
+- **Legacy**: Original API for backward compatibility (no JWT support)
+
+**Note**: This v2.0.0-beta deployment only includes v2 and legacy APIs. Users with existing v1.x installations will continue to have their v1 API available independently. JWT authentication is exclusively a v2 feature.
+
+### v2 API Features
+- **🔐 Integrated JWT Authentication**: Seamless Firebase ID token validation
+- **📊 Rich Metadata**: Comprehensive response metadata including:
+  - API feature capabilities
+  - Performance optimization status
+  - Security configuration details
+  - Enhanced user context with custom claims
+- **🎯 Future-Ready**: Foundation for advanced features like user-specific filtering
+- **⚡ Performance Optimized**: Enhanced query optimization and caching strategies
+
+### Enhanced Response Format (v2)
+```json
+{
+  "success": true,
+  "data": [...],
+  "meta": {
+    "apiVersion": "v2",
+    "features": {
+      "supportsJwtAuthentication": true,
+      "supportsUserContext": true,
+      "supportsEnhancedMetadata": true
+    },
+    "performance": {
+      "searchOptimized": true,
+      "fuzzySearchEnabled": true,
+      "rateLimitingEnabled": true
+    },
+    "security": {
+      "jwtAuthenticationEnabled": true,
+      "collectionRestricted": true,
+      "fieldRestricted": true
+    },
+    "user": {
+      "uid": "user123",
+      "email": "user@example.com",
+      "emailVerified": true,
+      "customClaims": {}
+    }
+  }
+}
+```
+
+### Migration Guide
+- **Existing Applications**: Continue using v1 or legacy endpoints (no changes required)
+- **New Applications**: Use v2 endpoints for enhanced features
+- **Gradual Migration**: Migrate endpoints individually at your own pace
+
+### Beta Release Notes
+- This is a beta release for testing and feedback
+- Production deployments should continue using v1.5.0 stable
+- Report issues and feedback for v2 API improvements
+
+## [1.5.0] - 2025-09-17
+
+### Added
+- **🔐 JWT Authentication Support**: Optional JWT token validation for secure API access
+  - **Configurable Security**: New `REQUIRE_JWT_AUTHENTICATION` parameter to enable/disable JWT validation
+  - **Firebase ID Token Integration**: Uses Firebase Admin Auth for native token validation
+  - **Bearer Token Format**: Standard `Authorization: Bearer <token>` header support
+  - **Backward Compatibility**: When disabled, API works exactly as before (default: disabled)
+  - **User Context**: Authenticated requests include user information in response metadata
+
+### Security Features
+- **Firebase Native**: Leverages Firebase ID tokens - no custom JWT implementation needed
+- **Comprehensive Validation**: Handles token expiration, revocation, and format validation
+- **Detailed Error Responses**: Specific error codes for different authentication failures
+  - `NO_TOKEN`: Missing authentication token
+  - `TOKEN_EXPIRED`: Token has expired
+  - `TOKEN_REVOKED`: Token has been revoked
+  - `INVALID_TOKEN`: Invalid token format or signature
+  - `PROJECT_ERROR`: Firebase project configuration issues
+
+### Technical Implementation
+- **Zero Breaking Changes**: Existing APIs continue working when JWT is disabled
+- **Enhanced CORS**: Updated CORS headers to support Authorization header
+- **User Metadata**: Authenticated responses include user UID, email, and verification status
+- **Performance Optimized**: Uses Firebase Admin SDK's built-in token validation
+- **Audit Logging**: Authenticated requests log user information for security tracking
+
+### Configuration
+- **Easy Setup**: Single boolean parameter to enable secure mode
+- **Flexible Deployment**: Can be enabled/disabled per extension installation
+- **Professional Security**: Enterprise-ready authentication for production APIs
+
+### Benefits
+- **Secure APIs**: Protect sensitive data with Firebase authentication
+- **User-Specific Access**: Foundation for user-based permissions and filtering
+- **Compliance Ready**: Meets security requirements for regulated industries
+- **Developer Friendly**: Simple Bearer token authentication that works with all HTTP clients
+
 ## [1.4.0] - 2025-09-12
 
 ### Added

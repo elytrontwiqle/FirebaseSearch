@@ -7,6 +7,7 @@ This extension provides configurable search functionality for your Firestore col
 The Firestore Search Extension allows you to:
 
 - **Search a dedicated collection** configured during installation
+- **🔐 Optional JWT authentication** for secure API access using Firebase ID tokens
 - **Pre-configure searchable fields** for enhanced security and performance
 - **Fuzzy search with typo tolerance** (1 typo per 4 characters) for better UX
 - **Automatic data transformation** (Firestore timestamps → ISO strings, references → paths)
@@ -48,7 +49,29 @@ service cloud.firestore {
 }
 ```
 
-### 4. Performance Considerations
+### 4. JWT Authentication Consideration
+
+If you plan to enable JWT authentication (`REQUIRE_JWT_AUTHENTICATION = "true"`), ensure you have Firebase Authentication set up:
+
+1. **Enable Firebase Authentication** in your project
+2. **Configure sign-in methods** (email/password, Google, GitHub, etc.)
+3. **Set up client-side authentication** to generate Firebase ID tokens
+4. **Plan for token management** (refresh, expiration handling)
+
+**Security Benefits:**
+- **User Context**: Know which user made each request
+- **Access Control**: Foundation for user-specific permissions
+- **Audit Trail**: Track API usage by authenticated users
+- **Data Protection**: Secure sensitive collections from unauthorized access
+
+**When to Enable JWT Authentication:**
+- ✅ **Enable** for sensitive data (user profiles, private content, financial data)
+- ✅ **Enable** for user-specific search results
+- ✅ **Enable** for production applications requiring access control
+- ❌ **Disable** for public data (product catalogs, public articles)
+- ❌ **Disable** for development/testing environments
+
+### 5. Performance Considerations
 - **Indexing**: Ensure your Firestore collections have appropriate indexes for the fields you plan to search
 - **Collection Size**: For very large collections (>100k documents), consider implementing additional filtering or pagination
 - **Search Frequency**: High-frequency searches may impact your Firestore read quotas

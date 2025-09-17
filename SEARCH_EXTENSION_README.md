@@ -5,6 +5,7 @@ A powerful HTTP-based Firebase Extension that provides dedicated search function
 ## Features
 
 - 🔍 **HTTP REST API**: Simple HTTP endpoints for easy integration with any application
+- 🔐 **JWT Authentication**: Optional Firebase ID token validation for secure API access
 - 🎯 **Pre-configured Fields**: Searchable fields configured during installation for enhanced security
 - 🔗 **Nested Field Support**: Search and return nested object fields using dot notation
 - 🛡️ **Error Handling**: Comprehensive error handling with structured error responses
@@ -19,13 +20,13 @@ A powerful HTTP-based Firebase Extension that provides dedicated search function
 
 Install directly using the extension link:
 ```
-https://console.firebase.google.com/project/_/extensions/install?ref=elytron/firestore-search-extension@1.0.0-beta.0
+https://console.firebase.google.com/project/_/extensions/install?ref=elytron/firestore-search-extension@1.5.0
 ```
 
 ### Via Firebase CLI
 
 ```bash
-firebase ext:install elytron/firestore-search-extension@1.0.0-beta.0 --project=your-project-id
+firebase ext:install elytron/firestore-search-extension@1.5.0 --project=your-project-id
 ```
 
 ## Configuration
@@ -35,6 +36,7 @@ During installation, you'll configure these parameters:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | **Location** | Cloud Functions deployment region | us-central1 |
+| **JWT Authentication** | Enable Firebase ID token validation for secure API access | false |
 | **Search Collection** | The Firestore collection to search (required) | - |
 | **Searchable Fields** | Comma-separated list of fields to search in (required) | - |
 | **Default Search Limit** | Default maximum number of results | 50 |

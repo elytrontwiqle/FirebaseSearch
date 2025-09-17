@@ -7,6 +7,7 @@ A comprehensive Firebase Cloud Function that provides dedicated search functiona
 ## Key Features Implemented
 
 ### ✅ Core Functionality
+- **🔐 JWT Authentication**: Optional Firebase ID token validation for secure API access
 - **Pre-configured Search Parameters**: 
   - Collection and searchable fields configured during installation
   - `searchValue`: The search term (required)
@@ -34,6 +35,10 @@ A comprehensive Firebase Cloud Function that provides dedicated search functiona
 - **Structured Error Responses**: Consistent error format with error codes
 - **Error Code Classification**: 
   - `VALIDATION_ERROR`: Invalid input parameters
+  - `NO_TOKEN`: Missing JWT authentication token
+  - `TOKEN_EXPIRED`: JWT token has expired
+  - `TOKEN_REVOKED`: JWT token has been revoked
+  - `INVALID_TOKEN`: Invalid JWT token format
   - `PERMISSION_DENIED`: Insufficient permissions
   - `NOT_FOUND`: Collection/document not found
   - `QUOTA_EXCEEDED`: Rate limits exceeded
@@ -159,7 +164,13 @@ curl "https://us-central1-project-id.cloudfunctions.net/ext-firestore-search-ext
     "searchCollection": "users",
     "searchValue": "john",
     "searchFields": ["name", "email"],
-    "returnFields": ["name", "email"]
+    "returnFields": ["name", "email"],
+    "authenticated": true,
+    "user": {
+      "uid": "user123",
+      "email": "user@example.com",
+      "emailVerified": true
+    }
   }
 }
 ```
@@ -189,10 +200,12 @@ curl "https://us-central1-project-id.cloudfunctions.net/ext-firestore-search-ext
 
 ## Security Considerations
 
+- **JWT Authentication**: Optional Firebase ID token validation for secure API access
+- **User Context**: Authenticated requests include user information in response metadata
+- **Access Control**: Foundation for implementing user-specific permissions
 - Ensure Firestore security rules allow read access to target collections
-- Consider implementing authentication for production use
-- The extension includes input validation and sanitization
-- Rate limiting should be implemented for production environments
+- The extension includes comprehensive input validation and sanitization
+- Rate limiting is built-in to prevent abuse and ensure fair usage
 
 ## Performance Notes
 
